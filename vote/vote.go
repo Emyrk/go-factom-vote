@@ -3,7 +3,12 @@ package vote
 import (
 	"fmt"
 
+	"encoding/hex"
+
+	"encoding/json"
+
 	"github.com/FactomProject/factomd/common/identity"
+	"github.com/FactomProject/factomd/common/interfaces"
 	"github.com/FactomProject/factomd/common/primitives"
 )
 
@@ -11,7 +16,7 @@ import (
 //
 type Vote struct {
 	// All votes have a proposal
-	Proposal ProposalEntry
+	Proposal *ProposalEntry
 
 	// Eligible Voters
 	Eligibility    EligibleVoterHeader
@@ -24,7 +29,7 @@ type Vote struct {
 	Reveals map[[32]byte]VoteReveal
 
 	// Keeps track of the current eblock synced up too
-	VoteChainSync identity.EntryBlockSync
+	VoteChainSync *identity.EntryBlockSync
 }
 
 func NewVote() *Vote {
@@ -32,6 +37,7 @@ func NewVote() *Vote {
 	v.EligibleVoters = make(map[[32]byte]EligibleVoter)
 	v.Commits = make(map[[32]byte]VoteCommit)
 	v.Reveals = make(map[[32]byte]VoteReveal)
+	v.VoteChainSync = identity.NewEntryBlockSync()
 	return v
 }
 
@@ -60,18 +66,18 @@ func (v *Vote) AddVoter(e EligibleVoterEntry, height int) (int, error) {
 }
 
 //
-func (v *Vote) AddCommit(c VoteCommit, height int) error {
-	if height < v.Proposal.Vote.PhasesBlockHeights.CommitStart {
-		return fmt.Errorf("Commit phase has not started")
+func (v *Vote) AddCommit(c VoteCommit, height uint32) error {
+	if int(height) < v.Proposal.Vote.PhasesBlockHeights.CommitStart {
+		return fmt.Errorf("commit phase has not started")
 	}
 
-	if height > v.Proposal.Vote.PhasesBlockHeights.CommitEnd {
-		return fmt.Errorf("Commit phase has ended")
+	if int(height) > v.Proposal.Vote.PhasesBlockHeights.CommitEnd {
+		return fmt.Errorf("commit phase has ended")
 	}
 
 	_, ok := v.EligibleVoters[c.VoterID.Fixed()]
 	if !ok {
-		return fmt.Errorf("Not an eligible voter")
+		return fmt.Errorf("not an eligible voter")
 	}
 
 	// TODO: Check signature
@@ -83,22 +89,22 @@ func (v *Vote) AddCommit(c VoteCommit, height int) error {
 
 func (v *Vote) AddReveal(r VoteReveal, height int) error {
 	if height < v.Proposal.Vote.PhasesBlockHeights.RevealStart {
-		return fmt.Errorf("Commit phase has not started")
+		return fmt.Errorf("commit phase has not started")
 	}
 
 	if height > v.Proposal.Vote.PhasesBlockHeights.RevealEnd {
-		return fmt.Errorf("Commit phase has ended")
+		return fmt.Errorf("commit phase has ended")
 	}
 
 	_, ok := v.EligibleVoters[r.VoterID.Fixed()]
 	if !ok {
-		return fmt.Errorf("Not an eligible voter")
+		return fmt.Errorf("not an eligible voter")
 	}
 
 	// If commit does not exist, we discard it
 	commit, ok := v.Commits[r.VoterID.Fixed()]
 	if !ok {
-		return fmt.Errorf("No commit found for this reveal")
+		return fmt.Errorf("no commit found for this reveal")
 	}
 
 	// TODO: Check hmac against commit
@@ -107,20 +113,52 @@ func (v *Vote) AddReveal(r VoteReveal, height int) error {
 	// If reveal exists, we discard it
 	_, ok = v.Reveals[r.VoterID.Fixed()]
 	if !ok {
-		return fmt.Errorf("Reveal already bound. Only 1 reveal allowed")
+		return fmt.Errorf("reveal already bound. Only 1 reveal allowed")
 	}
 	v.Reveals[r.VoterID.Fixed()] = r
 	return nil
 }
 
 type VoteCommit struct {
-	VoterID   primitives.Hash      `json:"voterID"`
+	VoterID   interfaces.IHash     `json:"voterID"`
 	VoterKey  primitives.PublicKey `json:"voterKey"`
 	Signature primitives.Signature `json:"signature"`
 
 	Content struct {
 		Commitment string `json:"commitment"`
 	}
+}
+
+func NewVoteCommit(entry interfaces.IEBEntry) (*VoteCommit, error) {
+	if len(entry.ExternalIDs()) != 4 {
+		return nil, fmt.Errorf("expected 4 extids, found %d", len(entry.ExternalIDs()))
+	}
+
+	c := new(VoteCommit)
+	hash, err := primitives.HexToHash(string(entry.ExternalIDs()[1]))
+	if err != nil {
+		return nil, err
+	}
+	c.VoterID = hash
+
+	key, err := hex.DecodeString(string(entry.ExternalIDs()[2]))
+	if err != nil {
+		return nil, err
+	}
+	c.VoterKey.UnmarshalBinary(key)
+
+	sig, err := hex.DecodeString(string(entry.ExternalIDs()[3]))
+	if err != nil {
+		return nil, err
+	}
+	c.Signature.SetSignature(sig)
+
+	err = json.Unmarshal(entry.GetContent(), c)
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
 type VoteReveal struct {

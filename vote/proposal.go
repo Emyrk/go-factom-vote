@@ -1,6 +1,11 @@
 package vote
 
 import (
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+
+	"github.com/FactomProject/factomd/common/interfaces"
 	"github.com/FactomProject/factomd/common/primitives"
 )
 
@@ -9,13 +14,44 @@ type ProposalEntry struct {
 	// External IDs
 	ProtocolVersion int `json:"version"`
 	// Identity Chain
-	VoteInitiator      primitives.Hash      `json:"voteInitiator"`
+	ProposalChain      interfaces.IHash     `json:"vote-chain"`
+	VoteInitiator      interfaces.IHash     `json:"voteInitiator"`
 	InitiatorKey       primitives.PublicKey `json:"initiatorKey"`
 	InitiatorSignature primitives.Signature `json:"initiatorSignature"`
 
 	// Entry Content
 	Proposal ProposalContent `json:"proposal"`
 	Vote     VoteContent     `json:"vote"`
+}
+
+func NewProposalEntry(entry interfaces.IEBEntry) (*ProposalEntry, error) {
+	if len(entry.ExternalIDs()) != 5 {
+		return nil, fmt.Errorf("expected 5 external ids, found %d", len(entry.ExternalIDs()))
+	}
+
+	p := new(ProposalEntry)
+	p.ProposalChain = entry.GetChainID()
+	p.ProtocolVersion = 0 // TODO: Parse protocol version
+	hash, err := primitives.HexToHash(string(entry.ExternalIDs()[1]))
+	if err != nil {
+		return nil, err
+	}
+	p.VoteInitiator = hash
+	sig, err := hex.DecodeString(string(entry.ExternalIDs()[2]))
+	if err != nil {
+		return nil, err
+	}
+	err = p.InitiatorSignature.SetSignature(sig)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(entry.GetContent(), p)
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
 }
 
 type ProposalContent struct {
@@ -41,7 +77,7 @@ type VoteContent struct {
 
 	// ID of the eligible-voters-chain (see Eligible Participants section),
 	EligibleVotersChainID primitives.Hash `json:"eligibleVotersChainId"`
-	VoteType              string          `json:"type"`
+	VoteType              int             `json:"type"`
 	Config                struct {
 		Options []string `json:"options"` // a list of options the voters can choose from,
 		// boolean flag for allowing voters to cast an abstained vote
@@ -64,15 +100,17 @@ type AcceptanceCriteriaStruct struct {
 	MinTurnout struct {
 		Weighted   float64 `json:"weighted"`
 		Unweighted float64 `json:"unweighted"`
-	} `json:"m inTurnout"`
+	} `json:"minTurnout"`
 }
 
 // IsDataValid runs a check on the data to check if it's valid against the rules
-func (pe *ProposalEntry) IsDataValid() bool {
+func (pe *ProposalEntry) IsDataValid() (bool, error) {
 	// Cannot have both `text` and `externalRef` field
 	if pe.Proposal.Text != "" && pe.Proposal.ExternalRef.Href != "" {
-		return false
+		return false, fmt.Errorf("cannot have both 'text' and 'externalRef' fields")
 	}
 
-	return true
+	// TODO: What else makes it invalid?
+
+	return true, nil
 }
