@@ -15,12 +15,16 @@ type VoteWatcher struct {
 	VoteProposals map[[32]byte]*Vote
 	OldEntries    []*OldEntry
 
+	// Eligible Voter Lists
+	EligibleLists map[[32]byte]*EligibleList
+
 	sync.RWMutex
 }
 
 func NewVoteWatcher() *VoteWatcher {
 	vw := new(VoteWatcher)
 	vw.VoteProposals = make(map[[32]byte]*Vote)
+	vw.EligibleLists = make(map[[32]byte]*EligibleList)
 
 	return vw
 }
@@ -60,9 +64,14 @@ func (vw *VoteWatcher) ProcessEntry(entry interfaces.IEBEntry,
 	case EXT0_VOTE_COMMIT:
 		change, tryagain, err = vw.ProcessVoteCommit(entry, dBlockHeight, dBlockTimestamp, newEntry)
 	case EXT0_VOTE_REVEAL:
+		change, tryagain, err = vw.ProcessVoteReveal(entry, dBlockHeight, dBlockTimestamp, newEntry)
 	case EXT0_VOTE_REGISTRATION_CHAIN:
+		// This doesn't need to do anything
 	case EXT0_REGISTER_VOTE:
+		change, tryagain, err = vw.ProcessVoteRegister(entry, dBlockHeight, dBlockTimestamp, newEntry)
 	case EXT0_ELIGIBLE_VOTER_CHAIN:
+		change, tryagain, err = vw.ProcessNewEligibleList(entry, dBlockHeight, dBlockTimestamp, newEntry)
+		//case
 	}
 
 	if err != nil {
@@ -122,7 +131,8 @@ func (vw *VoteWatcher) ProcessVoteChain(entry interfaces.IEBEntry,
 
 	// Votes are indexed by the chain
 	if _, ok := vw.VoteProposals[entry.GetChainID().Fixed()]; ok {
-		return false, false, nil
+		// Already exists
+		return false, true, fmt.Errorf("vote chain already exists")
 	}
 
 	v := NewVote()
@@ -137,6 +147,12 @@ func (vw *VoteWatcher) ProcessVoteChain(entry interfaces.IEBEntry,
 		return false, false, fmt.Errorf("invalid proposal: %s", err.Error())
 	}
 	v.Proposal = proposal
+
+	list, ok := vw.EligibleLists[v.Proposal.Vote.EligibleVotersChainID.Fixed()]
+	if !ok {
+		return false, true, fmt.Errorf("no eligible voter list with chain: %s", v.Proposal.Vote.EligibleVotersChainID.String())
+	}
+	v.EligibleList = list
 
 	vw.AddNewVoteProposal(v)
 
@@ -158,7 +174,7 @@ func (vw *VoteWatcher) ProcessVoteCommit(entry interfaces.IEBEntry,
 	//	This entry is in the vote-chain
 	v, ok := vw.VoteProposals[entry.GetChainID().Fixed()]
 	if !ok {
-		return false, false, nil
+		return false, true, fmt.Errorf("vote chain does not exist for commit")
 	}
 
 	c, err := NewVoteCommit(entry)
@@ -171,6 +187,92 @@ func (vw *VoteWatcher) ProcessVoteCommit(entry interfaces.IEBEntry,
 	if err != nil {
 		return false, false, err
 	}
+
+	return true, false, nil
+}
+
+// ProcessVoteReveal
+//	Returns:
+//		bool 	True if a vote was updated or changed
+//		bool 	Indicates whether it should be tried again (out of order)
+//		error
+//
+func (vw *VoteWatcher) ProcessVoteReveal(entry interfaces.IEBEntry,
+	dBlockHeight uint32,
+	dBlockTimestamp interfaces.Timestamp,
+	newEntry bool) (bool, bool, error) {
+
+	// Votes are indexed by the chain
+	//	This entry is in the vote-chain
+	v, ok := vw.VoteProposals[entry.GetChainID().Fixed()]
+	if !ok {
+		return false, true, fmt.Errorf("vote chain does not exist for reveal")
+	}
+
+	r, err := NewVoteReveal(entry)
+	if err != nil {
+		return false, false, err
+	}
+
+	// We deference, as this structure is now immutable
+	err = v.AddReveal(*r, dBlockHeight)
+	if err != nil {
+		return false, false, err
+	}
+
+	return true, false, nil
+}
+
+// ProcessVoteReveal
+//	Returns:
+//		bool 	True if a vote was updated or changed
+//		bool 	Indicates whether it should be tried again (out of order)
+//		error
+//
+func (vw *VoteWatcher) ProcessVoteRegister(entry interfaces.IEBEntry,
+	dBlockHeight uint32,
+	dBlockTimestamp interfaces.Timestamp,
+	newEntry bool) (bool, bool, error) {
+
+	// Votes are indexed by the chain
+	//	This entry is in the vote-chain
+	v, ok := vw.VoteProposals[entry.GetChainID().Fixed()]
+	if !ok {
+		// TODO: Should we allow a register before the vote exists?
+		return false, true, fmt.Errorf("vote chain does not exist to be registered")
+	}
+
+	v.Registered = true
+	return true, false, nil
+}
+
+// ProcessNewEligibleList
+//	Returns:
+//		bool 	True if a vote was updated or changed
+//		bool 	Indicates whether it should be tried again (out of order)
+//		error
+//
+func (vw *VoteWatcher) ProcessNewEligibleList(entry interfaces.IEBEntry,
+	dBlockHeight uint32,
+	dBlockTimestamp interfaces.Timestamp,
+	newEntry bool) (bool, bool, error) {
+
+	// Votes are indexed by the chain
+	//	This entry is in the vote-chain
+	_, ok := vw.EligibleLists[entry.GetChainID().Fixed()]
+	if ok {
+		// Already here
+		return false, false, fmt.Errorf("eligibility list already exists")
+	}
+
+	list := NewEligibleList()
+	head, err := NewEligibleVoterHeader(entry)
+	if err != nil {
+		return false, false, err
+	}
+	list.EligibilityHeader = *head
+	list.ChainID = entry.GetChainID()
+	vw.EligibleLists[entry.GetChainID().Fixed()] = list
 
 	return true, false, nil
 }

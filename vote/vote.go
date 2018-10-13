@@ -15,12 +15,14 @@ import (
 // Vote is the master structure to keep track of an ongoing vote
 //
 type Vote struct {
+	// Has it been registered?
+	Registered bool
+
 	// All votes have a proposal
 	Proposal *ProposalEntry
 
 	// Eligible Voters
-	Eligibility    EligibleVoterHeader
-	EligibleVoters map[[32]byte]EligibleVoter
+	EligibleList *EligibleList
 
 	// CommitmentPhase
 	Commits map[[32]byte]VoteCommit
@@ -34,35 +36,10 @@ type Vote struct {
 
 func NewVote() *Vote {
 	v := new(Vote)
-	v.EligibleVoters = make(map[[32]byte]EligibleVoter)
 	v.Commits = make(map[[32]byte]VoteCommit)
 	v.Reveals = make(map[[32]byte]VoteReveal)
 	v.VoteChainSync = identity.NewEntryBlockSync()
 	return v
-}
-
-// AddVoter will check signatures, and add/remove voters given
-//			If the signature is invalid, it will return an error
-//	params:
-//		e EligibleVoterEntry
-//	returns:
-//		number of voters applied (added/removed)
-//		error if signature is invalid
-func (v *Vote) AddVoter(e EligibleVoterEntry, height int) (int, error) {
-	if height >= v.Proposal.Vote.PhasesBlockHeights.CommitStart {
-		return 0, fmt.Errorf("Vote has already started.")
-	}
-
-	// TODO: Check signature
-	for _, eg := range e.Content {
-		if _, ok := v.EligibleVoters[eg.VoterID.Fixed()]; eg.VoteWeight == 0 && ok {
-			delete(v.EligibleVoters, eg.VoterID.Fixed())
-		} else {
-			v.EligibleVoters[eg.VoterID.Fixed()] = eg
-		}
-	}
-
-	return 0, nil
 }
 
 //
@@ -75,7 +52,7 @@ func (v *Vote) AddCommit(c VoteCommit, height uint32) error {
 		return fmt.Errorf("commit phase has ended")
 	}
 
-	_, ok := v.EligibleVoters[c.VoterID.Fixed()]
+	_, ok := v.EligibleList.EligibleVoters[c.VoterID.Fixed()]
 	if !ok {
 		return fmt.Errorf("not an eligible voter")
 	}
@@ -87,16 +64,16 @@ func (v *Vote) AddCommit(c VoteCommit, height uint32) error {
 	return nil
 }
 
-func (v *Vote) AddReveal(r VoteReveal, height int) error {
-	if height < v.Proposal.Vote.PhasesBlockHeights.RevealStart {
+func (v *Vote) AddReveal(r VoteReveal, height uint32) error {
+	if int(height) < v.Proposal.Vote.PhasesBlockHeights.RevealStart {
 		return fmt.Errorf("commit phase has not started")
 	}
 
-	if height > v.Proposal.Vote.PhasesBlockHeights.RevealEnd {
+	if int(height) > v.Proposal.Vote.PhasesBlockHeights.RevealEnd {
 		return fmt.Errorf("commit phase has ended")
 	}
 
-	_, ok := v.EligibleVoters[r.VoterID.Fixed()]
+	_, ok := v.EligibleList.EligibleVoters[r.VoterID.Fixed()]
 	if !ok {
 		return fmt.Errorf("not an eligible voter")
 	}
@@ -162,7 +139,7 @@ func NewVoteCommit(entry interfaces.IEBEntry) (*VoteCommit, error) {
 }
 
 type VoteReveal struct {
-	VoterID primitives.Hash `json:"voterID"`
+	VoterID interfaces.IHash `json:"voterID"`
 
 	Content struct {
 		VoteOptions []string `json:"vote"`
@@ -172,4 +149,24 @@ type VoteReveal struct {
 		// (e.g. md5, sha1, sha256, sha512, etc.)
 		HmacAlgo string `json:"hmacAlgo"`
 	}
+}
+
+func NewVoteReveal(entry interfaces.IEBEntry) (*VoteReveal, error) {
+	if len(entry.ExternalIDs()) != 4 {
+		return nil, fmt.Errorf("expected 4 extids, found %d", len(entry.ExternalIDs()))
+	}
+
+	r := new(VoteReveal)
+	hash, err := primitives.HexToHash(string(entry.ExternalIDs()[1]))
+	if err != nil {
+		return nil, err
+	}
+	r.VoterID = hash
+
+	err = json.Unmarshal(entry.GetContent(), r)
+	if err != nil {
+		return nil, err
+	}
+
+	return r, nil
 }

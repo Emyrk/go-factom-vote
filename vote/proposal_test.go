@@ -19,6 +19,21 @@ func TestCommitJson(t *testing.T) {
 	}
 }
 
+func TestRevealJson(t *testing.T) {
+	j := `
+		{
+			"vote": ["a", "b"],
+			"secret": "5d918148b33f12cb43ce1c5b0cf28a13",
+			"hmacAlgo": "sha256"
+		}
+		`
+	r := new(VoteReveal)
+	err := json.Unmarshal([]byte(j), r)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 func TestProposalJSONMarshal(t *testing.T) {
 	j := `
 	{
