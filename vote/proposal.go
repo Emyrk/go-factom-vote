@@ -1,7 +1,6 @@
 package vote
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
@@ -32,18 +31,29 @@ func NewProposalEntry(entry interfaces.IEBEntry) (*ProposalEntry, error) {
 	p := new(ProposalEntry)
 	p.ProposalChain = entry.GetChainID()
 	p.ProtocolVersion = 0 // TODO: Parse protocol version
-	hash, err := primitives.HexToHash(string(entry.ExternalIDs()[1]))
+	//hash, err := primitives.HexToHash(string(entry.ExternalIDs()[2]))
+	//if err != nil {
+	//	return nil, fmt.Errorf("(extid[2]): %s", err.Error())
+	//}
+	p.VoteInitiator = new(primitives.Hash)
+	p.VoteInitiator.SetBytes(entry.ExternalIDs()[2]) // = hash
+
+	//b, err := hex.DecodeString(string(entry.ExternalIDs()[3]))
+	//if err != nil {
+	//	return nil, fmt.Errorf("(extid[3]): %s", err.Error())
+	//}
+	err := p.InitiatorKey.UnmarshalBinary(entry.ExternalIDs()[3])
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("(extid[3]): %s", err.Error())
 	}
-	p.VoteInitiator = hash
-	sig, err := hex.DecodeString(string(entry.ExternalIDs()[2]))
+
+	//sig, err := hex.DecodeString(string(entry.ExternalIDs()[4]))
+	//if err != nil {
+	//	return nil, fmt.Errorf("(extid[4]): %s", err.Error())
+	//}
+	err = p.InitiatorSignature.SetSignature(entry.ExternalIDs()[4])
 	if err != nil {
-		return nil, err
-	}
-	err = p.InitiatorSignature.SetSignature(sig)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("(extid[4]): %s", err.Error())
 	}
 
 	err = json.Unmarshal(entry.GetContent(), p)
@@ -105,6 +115,7 @@ type AcceptanceCriteriaStruct struct {
 
 // IsDataValid runs a check on the data to check if it's valid against the rules
 func (pe *ProposalEntry) IsDataValid() (bool, error) {
+	return true, nil
 	// Cannot have both `text` and `externalRef` field
 	if pe.Proposal.Text != "" && pe.Proposal.ExternalRef.Href != "" {
 		return false, fmt.Errorf("cannot have both 'text' and 'externalRef' fields")

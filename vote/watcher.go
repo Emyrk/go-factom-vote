@@ -9,7 +9,10 @@ import (
 
 	"github.com/FactomProject/factomd/common/interfaces"
 	"github.com/FactomProject/factomd/common/primitives"
+	log "github.com/sirupsen/logrus"
 )
+
+var vwLogger = log.WithFields(log.Fields{"struct": "VoteWatcher"})
 
 // VoteWatcher watches the blockchain for proposals and votes
 type VoteWatcher struct {
@@ -35,6 +38,30 @@ func (vw *VoteWatcher) AddNewVoteProposal(p *Vote) {
 	vw.Lock()
 	vw.VoteProposals[p.Proposal.ProposalChain.Fixed()] = p
 	vw.Unlock()
+}
+
+// ParsingEntry is parsable, as it contains all the needed info
+type ParsingEntry struct {
+	Entry       interfaces.IEBEntry
+	Timestamp   interfaces.Timestamp
+	BlockHeight uint32
+}
+
+func (vw *VoteWatcher) ParseEntryList(list []ParsingEntry) error {
+	for _, e := range list {
+		_, err := vw.ProcessEntry(e.Entry, e.BlockHeight, e.Timestamp, true)
+		if err != nil {
+			first := ""
+			if len(e.Entry.ExternalIDs()) >= 1 {
+				first = string(e.Entry.ExternalIDs()[0])
+			}
+			vwLogger.WithFields(log.Fields{"func": "ParseEntryList", "chain": e.Entry.GetChainID().String(), "entryhash": e.Entry.GetHash().String(), "[0]": first}).Errorf("Error: %s", err.Error())
+		}
+	}
+
+	// Parse the remaining
+	vw.ProcessOldEntries()
+	return nil
 }
 
 // ProcessEntry will take an entry and apply it to a vote if one exists for the entry
@@ -275,7 +302,7 @@ func (vw *VoteWatcher) ProcessNewEligibleList(entry interfaces.IEBEntry,
 
 	// Check if any voters in the content
 	var voters []EligibleVoter
-	err = json.Unmarshal(entry.GetContent(), voters)
+	err = json.Unmarshal(entry.GetContent(), &voters)
 	if err == nil {
 		for _, v := range voters {
 			list.EligibleVoters[v.VoterID.Fixed()] = v

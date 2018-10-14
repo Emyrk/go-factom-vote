@@ -3,9 +3,9 @@ package vote
 import (
 	"fmt"
 
-	"encoding/hex"
-
 	"encoding/json"
+
+	"bytes"
 
 	"github.com/FactomProject/factomd/common/identity"
 	"github.com/FactomProject/factomd/common/interfaces"
@@ -16,22 +16,22 @@ import (
 //
 type Vote struct {
 	// Has it been registered?
-	Registered bool
+	Registered bool `json:"registered"`
 
 	// All votes have a proposal
-	Proposal *ProposalEntry
+	Proposal *ProposalEntry `json:"proposal"`
 
 	// Eligible Voters
-	EligibleList *EligibleList
+	EligibleList *EligibleList `json:"-"`
 
 	// CommitmentPhase
-	Commits map[[32]byte]VoteCommit
+	Commits map[[32]byte]VoteCommit `json:"-"`
 
-	// RevealPhas
-	Reveals map[[32]byte]VoteReveal
+	// RevealPhase
+	Reveals map[[32]byte]VoteReveal `json:"-"`
 
 	// Keeps track of the current eblock synced up too
-	VoteChainSync *identity.EntryBlockSync
+	VoteChainSync *identity.EntryBlockSync `json:"-"`
 }
 
 func NewVote() *Vote {
@@ -40,6 +40,36 @@ func NewVote() *Vote {
 	v.Reveals = make(map[[32]byte]VoteReveal)
 	v.VoteChainSync = identity.NewEntryBlockSync()
 	return v
+}
+
+func (v *Vote) String() string {
+	var r []VoteReveal
+	for _, rm := range v.Reveals {
+		r = append(r, rm)
+	}
+
+	var c []VoteCommit
+	for _, cm := range v.Commits {
+		c = append(c, cm)
+	}
+
+	data, err := json.Marshal(struct {
+		Proposal interface{} `json:"proposal"`
+		Commits  interface{} `json:"commits"`
+		Reveals  interface{} `json:"reveals"`
+	}{
+		v,
+		c,
+		r,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	var buf bytes.Buffer
+	json.Indent(&buf, data, "", "\t")
+
+	return string(buf.Bytes())
 }
 
 //
@@ -89,7 +119,7 @@ func (v *Vote) AddReveal(r VoteReveal, height uint32) error {
 
 	// If reveal exists, we discard it
 	_, ok = v.Reveals[r.VoterID.Fixed()]
-	if !ok {
+	if ok {
 		return fmt.Errorf("reveal already bound. Only 1 reveal allowed")
 	}
 	v.Reveals[r.VoterID.Fixed()] = r
@@ -103,7 +133,7 @@ type VoteCommit struct {
 
 	Content struct {
 		Commitment string `json:"commitment"`
-	}
+	} `json:"content"`
 }
 
 func NewVoteCommit(entry interfaces.IEBEntry) (*VoteCommit, error) {
@@ -112,25 +142,26 @@ func NewVoteCommit(entry interfaces.IEBEntry) (*VoteCommit, error) {
 	}
 
 	c := new(VoteCommit)
-	hash, err := primitives.HexToHash(string(entry.ExternalIDs()[1]))
-	if err != nil {
-		return nil, err
-	}
-	c.VoterID = hash
+	//hash, err := primitives.HexToHash(string(entry.ExternalIDs()[1]))
+	//if err != nil {
+	//	return nil, err
+	//}
+	c.VoterID = new(primitives.Hash)
+	c.VoterID.SetBytes(entry.ExternalIDs()[1])
 
-	key, err := hex.DecodeString(string(entry.ExternalIDs()[2]))
-	if err != nil {
-		return nil, err
-	}
-	c.VoterKey.UnmarshalBinary(key)
+	//key, err := hex.DecodeString(string(entry.ExternalIDs()[2]))
+	//if err != nil {
+	//	return nil, err
+	//}
+	c.VoterKey.UnmarshalBinary(entry.ExternalIDs()[2])
 
-	sig, err := hex.DecodeString(string(entry.ExternalIDs()[3]))
-	if err != nil {
-		return nil, err
-	}
-	c.Signature.SetSignature(sig)
+	//sig, err := hex.DecodeString(string(entry.ExternalIDs()[3]))
+	//if err != nil {
+	//	return nil, err
+	//}
+	c.Signature.SetSignature(entry.ExternalIDs()[3])
 
-	err = json.Unmarshal(entry.GetContent(), c)
+	err := json.Unmarshal(entry.GetContent(), &c.Content)
 	if err != nil {
 		return nil, err
 	}
@@ -148,22 +179,24 @@ type VoteReveal struct {
 		// The hash function used to generate the committed HMAC
 		// (e.g. md5, sha1, sha256, sha512, etc.)
 		HmacAlgo string `json:"hmacAlgo"`
-	}
+	} `json:"content"`
 }
 
 func NewVoteReveal(entry interfaces.IEBEntry) (*VoteReveal, error) {
-	if len(entry.ExternalIDs()) != 4 {
-		return nil, fmt.Errorf("expected 4 extids, found %d", len(entry.ExternalIDs()))
+	if len(entry.ExternalIDs()) != 2 {
+		return nil, fmt.Errorf("expected 2 extids, found %d", len(entry.ExternalIDs()))
 	}
 
 	r := new(VoteReveal)
-	hash, err := primitives.HexToHash(string(entry.ExternalIDs()[1]))
-	if err != nil {
-		return nil, err
-	}
-	r.VoterID = hash
+	r.VoterID = new(primitives.Hash)
+	r.VoterID.SetBytes(entry.ExternalIDs()[1])
+	//hash, err := primitives.HexToHash(string(entry.ExternalIDs()[1]))
+	//if err != nil {
+	//	return nil, err
+	//}
+	//r.VoterID = hash
 
-	err = json.Unmarshal(entry.GetContent(), r)
+	err := json.Unmarshal(entry.GetContent(), &r.Content)
 	if err != nil {
 		return nil, err
 	}
