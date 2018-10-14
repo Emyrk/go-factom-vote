@@ -5,6 +5,8 @@ import (
 
 	"sync"
 
+	"encoding/json"
+
 	"github.com/FactomProject/factomd/common/interfaces"
 	"github.com/FactomProject/factomd/common/primitives"
 )
@@ -270,6 +272,16 @@ func (vw *VoteWatcher) ProcessNewEligibleList(entry interfaces.IEBEntry,
 	if err != nil {
 		return false, false, err
 	}
+
+	// Check if any voters in the content
+	var voters []EligibleVoter
+	err = json.Unmarshal(entry.GetContent(), voters)
+	if err == nil {
+		for _, v := range voters {
+			list.EligibleVoters[v.VoterID.Fixed()] = v
+		}
+	}
+
 	list.EligibilityHeader = *head
 	list.ChainID = entry.GetChainID()
 	vw.EligibleLists[entry.GetChainID().Fixed()] = list
