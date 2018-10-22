@@ -8,11 +8,14 @@ type EligibleList struct {
 	// Eligible Voters
 	EligibilityHeader EligibleVoterHeader        `json:"header"`
 	EligibleVoters    map[[32]byte]EligibleVoter `json:"voters"`
+	// Able to check if an entry was already processed
+	SubmittedEntries map[[32]byte]bool `json:"replay-filter"`
 }
 
 func NewEligibleList() *EligibleList {
 	e := new(EligibleList)
 	e.EligibleVoters = make(map[[32]byte]EligibleVoter)
+	e.SubmittedEntries = make(map[[32]byte]bool)
 	return e
 }
 
@@ -23,15 +26,18 @@ func NewEligibleList() *EligibleList {
 //	returns:
 //		number of voters applied (added/removed)
 //		error if signature is invalid
-func (l *EligibleList) AddVoter(e EligibleVoterEntry, height int) (int, error) {
+func (l *EligibleList) AddVoter(e *EligibleVoterEntry, height int) (int, error) {
+	count := 0
 	// TODO: Check signature
 	for _, eg := range e.Content {
 		if _, ok := l.EligibleVoters[eg.VoterID.Fixed()]; eg.VoteWeight == 0 && ok {
 			delete(l.EligibleVoters, eg.VoterID.Fixed())
+			count++
 		} else {
 			l.EligibleVoters[eg.VoterID.Fixed()] = eg
+			count++
 		}
 	}
 
-	return 0, nil
+	return count, nil
 }

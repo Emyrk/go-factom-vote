@@ -7,6 +7,8 @@ import (
 
 	"encoding/json"
 
+	"crypto/sha256"
+
 	"github.com/FactomProject/factomd/common/interfaces"
 	"github.com/FactomProject/factomd/common/primitives"
 	log "github.com/sirupsen/logrus"
@@ -32,12 +34,6 @@ func NewVoteWatcher() *VoteWatcher {
 	vw.EligibleLists = make(map[[32]byte]*EligibleList)
 
 	return vw
-}
-
-func (vw *VoteWatcher) AddNewVoteProposal(p *Vote) {
-	vw.Lock()
-	vw.VoteProposals[p.Proposal.ProposalChain.Fixed()] = p
-	vw.Unlock()
 }
 
 // ParsingEntry is parsable, as it contains all the needed info
@@ -99,8 +95,11 @@ func (vw *VoteWatcher) ProcessEntry(entry interfaces.IEBEntry,
 	case EXT0_REGISTER_VOTE:
 		change, tryagain, err = vw.ProcessVoteRegister(entry, dBlockHeight, dBlockTimestamp, newEntry)
 	case EXT0_ELIGIBLE_VOTER_CHAIN:
-		change, tryagain, err = vw.ProcessNewEligibleList(entry, dBlockHeight, dBlockTimestamp, newEntry)
-		//case
+		if len(entry.ExternalIDs()) == 3 {
+
+		} else {
+			change, tryagain, err = vw.ProcessNewEligibleList(entry, dBlockHeight, dBlockTimestamp, newEntry)
+		}
 	}
 
 	if err != nil {
@@ -212,7 +211,7 @@ func (vw *VoteWatcher) ProcessVoteCommit(entry interfaces.IEBEntry,
 	}
 
 	// We deference, as this structure is now immutable
-	err = v.AddCommit(*c, dBlockHeight)
+	err = vw.AddCommit(v, *c, dBlockHeight) // v.AddCommit(*c, dBlockHeight)
 	if err != nil {
 		return false, false, err
 	}
@@ -244,7 +243,7 @@ func (vw *VoteWatcher) ProcessVoteReveal(entry interfaces.IEBEntry,
 	}
 
 	// We deference, as this structure is now immutable
-	err = v.AddReveal(*r, dBlockHeight)
+	err = vw.AddReveal(v, *r, dBlockHeight)
 	if err != nil {
 		return false, false, err
 	}
@@ -271,7 +270,10 @@ func (vw *VoteWatcher) ProcessVoteRegister(entry interfaces.IEBEntry,
 		return false, true, fmt.Errorf("vote chain does not exist to be registered")
 	}
 
-	v.Registered = true
+	err := vw.SetRegistered(v, true)
+	if err != nil {
+		return false, false, err
+	}
 	return true, false, nil
 }
 
@@ -312,6 +314,50 @@ func (vw *VoteWatcher) ProcessNewEligibleList(entry interfaces.IEBEntry,
 	list.EligibilityHeader = *head
 	list.ChainID = entry.GetChainID()
 	vw.EligibleLists[entry.GetChainID().Fixed()] = list
+
+	return true, false, nil
+}
+
+// ProcessNewEligibleVoter
+//	Returns:
+//		bool 	True if a vote was updated or changed
+//		bool 	Indicates whether it should be tried again (out of order)
+//		error
+//
+func (vw *VoteWatcher) ProcessNewEligibleVoter(entry interfaces.IEBEntry,
+	dBlockHeight uint32,
+	dBlockTimestamp interfaces.Timestamp,
+	newEntry bool) (bool, bool, error) {
+
+	// Votes are indexed by the chain
+	//	This entry is in the vote-chain
+	list, ok := vw.EligibleLists[entry.GetChainID().Fixed()]
+	if ok {
+		// Already here
+		return false, false, fmt.Errorf("eligibility list already exists")
+	}
+
+	data, err := entry.MarshalBinary()
+	if err != nil {
+		return false, false, err
+	}
+
+	hash := sha256.Sum256(data)
+	if _, ok := list.SubmittedEntries[hash]; ok {
+		return false, false, fmt.Errorf("repeated eligible entry tossed")
+	}
+
+	list.SubmittedEntries[hash] = true
+
+	ee, err := NewEligibleVoterEntry(entry)
+	if err != nil {
+		return false, false, err
+	}
+
+	_, err = list.AddVoter(ee, int(dBlockHeight))
+	if err != nil {
+		return false, false, err
+	}
 
 	return true, false, nil
 }

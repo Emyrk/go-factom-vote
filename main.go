@@ -61,7 +61,7 @@ func main() {
 	} else {
 		// Single
 		if *rootHex == "" {
-			fmt.Println("go-factom-vote -id=888888....")
+			fmt.Println("go-factom-vote -v=888888....")
 			return
 		}
 
