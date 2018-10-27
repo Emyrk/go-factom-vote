@@ -1,4 +1,4 @@
-package vote
+package common
 
 import (
 	"encoding/json"

@@ -1,4 +1,4 @@
-package vote
+package common
 
 import "github.com/FactomProject/factomd/common/interfaces"
 

@@ -1,7 +1,7 @@
 CREATE OR REPLACE FUNCTION insert_vote(
   param_vote_initiator char(64),
   param_signing_key char(64),
-  param_signature char(128),
+  param_signature varchar,
   param_title varchar,
   param_description varchar,
   param_external_href varchar,
@@ -12,7 +12,7 @@ CREATE OR REPLACE FUNCTION insert_vote(
   param_reveal_start integer,
   param_reveal_stop integer,
   param_eligible_voter_chain char(64),
-  param_vote_type varchar,
+  param_vote_type INTEGER,
   param_vote_options varchar,
   param_vote_allow_abstain boolean,
   param_vote_compute_results_against varchar,
@@ -28,10 +28,7 @@ BEGIN
     RETURN 0;
   ELSE
     -- Insert data into table
-    INSERT INTO proposals(block_height, key_mr, body_size, message_count)
-    VALUES(param_block_height, param_key_mr, param_body_size, param_message_count);
-
-    INSERT INTO search_table(vote_initiator,
+    INSERT INTO proposals(vote_initiator,
      signing_key,
      signature,
      title,

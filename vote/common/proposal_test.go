@@ -1,8 +1,10 @@
-package vote
+package common_test
 
 import (
 	"encoding/json"
 	"testing"
+
+	. "github.com/Emyrk/go-factom-vote/vote/common"
 )
 
 func TestCommitJson(t *testing.T) {

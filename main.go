@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/Emyrk/go-factom-vote/vote"
+	"github.com/Emyrk/go-factom-vote/vote/common"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -89,7 +90,7 @@ func main() {
 	//}
 }
 
-func parseSingle(votechainHex string, c *vote.Controller) (*vote.Vote, error) {
+func parseSingle(votechainHex string, c *vote.Controller) (*common.Vote, error) {
 	votechain, err := primitives.HexToHash(votechainHex)
 	if err != nil {
 		return nil, fmt.Errorf("parsing vote chain id: %s", err.Error())

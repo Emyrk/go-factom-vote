@@ -9,6 +9,8 @@ import (
 
 	"crypto/sha256"
 
+	. "github.com/Emyrk/go-factom-vote/vote/common"
+	"github.com/Emyrk/go-factom-vote/vote/database"
 	"github.com/FactomProject/factomd/common/interfaces"
 	"github.com/FactomProject/factomd/common/primitives"
 	log "github.com/sirupsen/logrus"
@@ -25,13 +27,20 @@ type VoteWatcher struct {
 	// Eligible Voter Lists
 	EligibleLists map[[32]byte]*EligibleList
 
+	SQLDB *database.SQLDatabase
+
 	sync.RWMutex
 }
 
 func NewVoteWatcher() *VoteWatcher {
+	var err error
 	vw := new(VoteWatcher)
 	vw.VoteProposals = make(map[[32]byte]*Vote)
 	vw.EligibleLists = make(map[[32]byte]*EligibleList)
+	vw.SQLDB, err = database.InitLocalDB()
+	if err != nil {
+		panic(err)
+	}
 
 	return vw
 }
