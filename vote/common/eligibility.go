@@ -26,18 +26,15 @@ func NewEligibleList() *EligibleList {
 //	returns:
 //		number of voters applied (added/removed)
 //		error if signature is invalid
-func (l *EligibleList) AddVoter(e *EligibleVoterEntry, height int) (int, error) {
-	count := 0
+func (l *EligibleList) AddVoter(e *EligibleVoterEntry) error {
 	// TODO: Check signature
 	for _, eg := range e.Content {
 		if _, ok := l.EligibleVoters[eg.VoterID.Fixed()]; eg.VoteWeight == 0 && ok {
 			delete(l.EligibleVoters, eg.VoterID.Fixed())
-			count++
 		} else {
 			l.EligibleVoters[eg.VoterID.Fixed()] = eg
-			count++
 		}
 	}
 
-	return count, nil
+	return nil
 }

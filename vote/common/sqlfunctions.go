@@ -104,3 +104,246 @@ func (v *Vote) RowValuePointers() []interface{} {
 		&v.Proposal.Vote.Config.MaxOptions,
 		&chain}
 }
+
+// Commit
+
+func (v *VoteCommit) New() ISQLObject {
+	return NewVoteCommit()
+}
+
+func (v *VoteCommit) Table() string {
+	return "commits"
+}
+
+func (v *VoteCommit) InsertFunction() string {
+	return "insert_commit"
+}
+
+func (v *VoteCommit) ScanRow(row SQLRowWithScan) (*VoteCommit, error) {
+	var id, sigKey, sig, chain, eHash string
+
+	err := row.Scan(
+		&id,
+		&sigKey,
+		&sig,
+		&v.Content.Commitment,
+		&chain,
+		&eHash,
+		&v.BlockHeight,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Fill in
+
+	return v, nil
+}
+
+func (v VoteCommit) SelectRows() string {
+	return `voter_id,
+			signing_key,
+			signature,
+			commitment,
+			vote_chain,
+			entry_hash,
+			block_height`
+}
+
+func (v *VoteCommit) RowValuePointers() []interface{} {
+	data, _ := v.Signature.MarshalBinary()
+	id, sigKey, sig, chain, ehash :=
+		v.VoterID.String(), // Vote Initiator
+		v.VoterKey.String(), // SigKey
+		hex.EncodeToString(data), // Signature
+		v.VoteChain.String(),
+		v.EntryHash.String()
+
+	return []interface{}{
+		&id,
+		&sigKey,
+		&sig,
+		&v.Content.Commitment,
+		&chain,
+		&ehash,
+		&v.BlockHeight,
+	}
+}
+
+// Reveal
+
+func (v *VoteReveal) New() ISQLObject {
+	return NewVoteReveal()
+}
+
+func (v *VoteReveal) Table() string {
+	return "reveals"
+}
+
+func (v *VoteReveal) InsertFunction() string {
+	return "insert_reveal"
+}
+
+func (v *VoteReveal) ScanRow(row SQLRowWithScan) (*VoteReveal, error) {
+	var id, vote, chain, eHash string
+
+	err := row.Scan(
+		&id,
+		&vote,
+		&v.Content.Secret,
+		&v.Content.HmacAlgo,
+		&chain,
+		&eHash,
+		&v.BlockHeight,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Fill in
+	v.Content.VoteOptions = strings.Split(vote, ",")
+
+	return v, nil
+}
+
+func (v VoteReveal) SelectRows() string {
+	return `voter_id,
+			vote,
+			secret,
+			hmac_algo,
+			vote_chain,
+			entry_hash,
+			block_height`
+}
+
+func (v *VoteReveal) RowValuePointers() []interface{} {
+	id, vote, chain, ehash :=
+		v.VoterID.String(), // Vote Initiator
+		strings.Join(v.Content.VoteOptions, ","), // SigKey
+		v.VoteChain.String(),
+		v.EntryHash.String()
+
+	return []interface{}{
+		&id,
+		&vote,
+		&v.Content.Secret,
+		&v.Content.HmacAlgo,
+		&chain,
+		&ehash,
+		&v.BlockHeight,
+	}
+}
+
+// EligibleList
+
+func (v *EligibleList) New() ISQLObject {
+	return NewEligibleList()
+}
+
+func (v *EligibleList) Table() string {
+	return "eligible_list"
+}
+
+func (v *EligibleList) InsertFunction() string {
+	return "insert_eligible_list"
+}
+
+func (v *EligibleList) ScanRow(row SQLRowWithScan) (*EligibleList, error) {
+	var id, vi, nonce, key, sig string
+
+	err := row.Scan(
+		&id,
+		&vi,
+		&nonce,
+		&key,
+		&sig,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Fill in
+
+	return v, nil
+}
+
+func (v EligibleList) SelectRows() string {
+	return `chain_id,
+			vote_initiator,
+			nonce,
+			initiator_key,
+			initiator_signature`
+}
+
+func (v *EligibleList) RowValuePointers() []interface{} {
+	id, vi, nonce, key, sig :=
+		v.ChainID.String(), // Chain_id
+		v.EligibilityHeader.VoteInitiator.String(),
+		v.EligibilityHeader.Nonce.String(),
+		v.EligibilityHeader.InitiatorKey.String(),
+		hex.EncodeToString(v.EligibilityHeader.InitiatorSignature.Bytes())
+
+	return []interface{}{
+		&id,
+		&vi,
+		&nonce,
+		&key,
+		&sig,
+	}
+}
+
+// EligibleList
+
+func (v *EligibleVoter) New() ISQLObject {
+	return NewEligibleVoter()
+}
+
+func (v *EligibleVoter) Table() string {
+	return "eligible_voters"
+}
+
+func (v *EligibleVoter) InsertFunction() string {
+	return "insert_eligible_voter"
+}
+
+func (v *EligibleVoter) ScanRow(row SQLRowWithScan) (*EligibleVoter, error) {
+	var id, list, ehash string
+
+	err := row.Scan(
+		&id,
+		&list,
+		&v.VoteWeight,
+		&ehash,
+		&v.BlockHeight,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Fill in
+
+	return v, nil
+}
+
+func (v EligibleVoter) SelectRows() string {
+	return `voter_id,
+			eligible_list,
+			weight,
+			entry_hash,
+			block_height`
+}
+
+func (v *EligibleVoter) RowValuePointers() []interface{} {
+	id, list, ehash :=
+		v.VoterID.String(), // Chain_id
+		v.EligibleList.String(),
+		v.EntryHash.String()
+
+	return []interface{}{
+		&id,
+		&list,
+		&v.VoteWeight,
+		&ehash,
+		&v.BlockHeight,
+	}
+}

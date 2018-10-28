@@ -59,7 +59,7 @@ type EligibleVoterEntry struct {
 	Content []EligibleVoter
 }
 
-func NewEligibleVoterEntry(entry interfaces.IEBEntry) (*EligibleVoterEntry, error) {
+func NewEligibleVoterEntry(entry interfaces.IEBEntry, blockHeight int) (*EligibleVoterEntry, error) {
 	if len(entry.ExternalIDs()) != 3 {
 		return nil, fmt.Errorf("expected 3 extids, found %d", len(entry.ExternalIDs()))
 	}
@@ -81,10 +81,25 @@ func NewEligibleVoterEntry(entry interfaces.IEBEntry) (*EligibleVoterEntry, erro
 		return nil, err
 	}
 
+	for i := range e.Content {
+		e.Content[i].BlockHeight = blockHeight
+		e.Content[i].EligibleList.SetBytes(entry.GetChainID().Bytes())
+		e.Content[i].EntryHash.SetBytes(entry.GetHash().Bytes())
+	}
+
 	return e, nil
 }
 
 type EligibleVoter struct {
-	VoterID    primitives.Hash `json:"voterId"`
-	VoteWeight int             `json:"weight"`
+	VoterID      primitives.Hash `json:"voterId"`
+	VoteWeight   int             `json:"weight"`
+	BlockHeight  int             `json:"blockHeight"`
+	EligibleList primitives.Hash `json:"eligibleList"`
+	EntryHash    primitives.Hash `json:"entryHash"`
+}
+
+func NewEligibleVoter() *EligibleVoter {
+	e := new(EligibleVoter)
+
+	return e
 }

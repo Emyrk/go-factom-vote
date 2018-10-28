@@ -214,7 +214,7 @@ func (vw *VoteWatcher) ProcessVoteCommit(entry interfaces.IEBEntry,
 		return false, true, fmt.Errorf("vote chain does not exist for commit")
 	}
 
-	c, err := NewVoteCommit(entry)
+	c, err := NewVoteCommitFromEntry(entry, int(dBlockHeight))
 	if err != nil {
 		return false, false, err
 	}
@@ -246,7 +246,7 @@ func (vw *VoteWatcher) ProcessVoteReveal(entry interfaces.IEBEntry,
 		return false, true, fmt.Errorf("vote chain does not exist for reveal")
 	}
 
-	r, err := NewVoteReveal(entry)
+	r, err := NewVoteRevealFromEntry(entry, int(dBlockHeight))
 	if err != nil {
 		return false, false, err
 	}
@@ -322,7 +322,10 @@ func (vw *VoteWatcher) ProcessNewEligibleList(entry interfaces.IEBEntry,
 
 	list.EligibilityHeader = *head
 	list.ChainID = entry.GetChainID()
-	vw.EligibleLists[entry.GetChainID().Fixed()] = list
+	err = vw.AddNewEligibleList(list)
+	if err != nil {
+		return false, false, err
+	}
 
 	return true, false, nil
 }
@@ -356,14 +359,13 @@ func (vw *VoteWatcher) ProcessNewEligibleVoter(entry interfaces.IEBEntry,
 		return false, false, fmt.Errorf("repeated eligible entry tossed")
 	}
 
-	list.SubmittedEntries[hash] = true
-
-	ee, err := NewEligibleVoterEntry(entry)
+	ee, err := NewEligibleVoterEntry(entry, int(dBlockHeight))
 	if err != nil {
 		return false, false, err
 	}
 
-	_, err = list.AddVoter(ee, int(dBlockHeight))
+	err = vw.AddEligibleVoter(list, ee, hash)
+	//_, err = list.AddVoter(ee)
 	if err != nil {
 		return false, false, err
 	}

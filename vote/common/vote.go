@@ -127,39 +127,39 @@ func (v *Vote) AddReveal(r VoteReveal, height uint32) error {
 }
 
 type VoteCommit struct {
-	VoterID   interfaces.IHash     `json:"voterID"`
-	VoterKey  primitives.PublicKey `json:"voterKey"`
-	Signature primitives.Signature `json:"signature"`
+	VoterID     interfaces.IHash     `json:"voterID"`
+	VoterKey    primitives.PublicKey `json:"voterKey"`
+	Signature   primitives.Signature `json:"signature"`
+	VoteChain   interfaces.IHash     `json:"voteChain"`
+	EntryHash   interfaces.IHash     `json:"entryHash"`
+	BlockHeight int                  `json:"blockHeight"`
 
 	Content struct {
 		Commitment string `json:"commitment"`
 	} `json:"content"`
 }
 
-func NewVoteCommit(entry interfaces.IEBEntry) (*VoteCommit, error) {
+func NewVoteCommit() *VoteCommit {
+	c := new(VoteCommit)
+	c.VoterID = new(primitives.Hash)
+	c.VoteChain = new(primitives.Hash)
+
+	return c
+}
+
+func NewVoteCommitFromEntry(entry interfaces.IEBEntry, blockHeight int) (*VoteCommit, error) {
 	if len(entry.ExternalIDs()) != 4 {
 		return nil, fmt.Errorf("expected 4 extids, found %d", len(entry.ExternalIDs()))
 	}
 
 	c := new(VoteCommit)
-	//hash, err := primitives.HexToHash(string(entry.ExternalIDs()[1]))
-	//if err != nil {
-	//	return nil, err
-	//}
 	c.VoterID = new(primitives.Hash)
 	c.VoterID.SetBytes(entry.ExternalIDs()[1])
-
-	//key, err := hex.DecodeString(string(entry.ExternalIDs()[2]))
-	//if err != nil {
-	//	return nil, err
-	//}
 	c.VoterKey.UnmarshalBinary(entry.ExternalIDs()[2])
-
-	//sig, err := hex.DecodeString(string(entry.ExternalIDs()[3]))
-	//if err != nil {
-	//	return nil, err
-	//}
 	c.Signature.SetSignature(entry.ExternalIDs()[3])
+	c.VoteChain = entry.GetChainID()
+	c.EntryHash = entry.GetHash()
+	c.BlockHeight = blockHeight
 
 	err := json.Unmarshal(entry.GetContent(), &c.Content)
 	if err != nil {
@@ -170,7 +170,10 @@ func NewVoteCommit(entry interfaces.IEBEntry) (*VoteCommit, error) {
 }
 
 type VoteReveal struct {
-	VoterID interfaces.IHash `json:"voterID"`
+	VoterID     interfaces.IHash `json:"voterID"`
+	VoteChain   interfaces.IHash `json:"voteChain"`
+	EntryHash   interfaces.IHash `json:"entryHash"`
+	BlockHeight int              `json:"blockHeight"`
 
 	Content struct {
 		VoteOptions []string `json:"vote"`
@@ -182,7 +185,15 @@ type VoteReveal struct {
 	} `json:"content"`
 }
 
-func NewVoteReveal(entry interfaces.IEBEntry) (*VoteReveal, error) {
+func NewVoteReveal() *VoteReveal {
+	r := new(VoteReveal)
+	r.VoterID = new(primitives.Hash)
+	r.VoteChain = new(primitives.Hash)
+
+	return r
+}
+
+func NewVoteRevealFromEntry(entry interfaces.IEBEntry, blockHeight int) (*VoteReveal, error) {
 	if len(entry.ExternalIDs()) != 2 {
 		return nil, fmt.Errorf("expected 2 extids, found %d", len(entry.ExternalIDs()))
 	}
@@ -190,16 +201,16 @@ func NewVoteReveal(entry interfaces.IEBEntry) (*VoteReveal, error) {
 	r := new(VoteReveal)
 	r.VoterID = new(primitives.Hash)
 	r.VoterID.SetBytes(entry.ExternalIDs()[1])
-	//hash, err := primitives.HexToHash(string(entry.ExternalIDs()[1]))
-	//if err != nil {
-	//	return nil, err
-	//}
-	//r.VoterID = hash
+
+	r.VoteChain = entry.GetChainID()
+	r.EntryHash = entry.GetHash()
 
 	err := json.Unmarshal(entry.GetContent(), &r.Content)
 	if err != nil {
 		return nil, err
 	}
+
+	r.BlockHeight = blockHeight
 
 	return r, nil
 }
