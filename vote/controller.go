@@ -115,7 +115,7 @@ func (c *Controller) FetchFirstEntry(chain interfaces.IHash) (ParsingEntry, erro
 	if err != nil {
 		return e, err
 	}
-	return ParsingEntry{entry, dblock.GetTimestamp(), block.GetDatabaseHeight()}, nil
+	return ParsingEntry{entry, dblock.GetTimestamp().GetTime(), block.GetDatabaseHeight()}, nil
 }
 
 // FetchChainEntriesInCreateOrder will retrieve all entries in a chain in created order
@@ -154,7 +154,7 @@ func (c *Controller) FetchChainEntriesInCreateOrder(chain interfaces.IHash) ([]P
 		if err != nil {
 			return nil, err
 		}
-		ts := dblock.GetTimestamp()
+		ts := dblock.GetTimestamp().GetTime()
 
 		ehashes := eb.GetEntryHashes()
 		for _, e := range ehashes {

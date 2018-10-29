@@ -30,7 +30,13 @@ func (db *SQLDatabase) SetRegistered(vote interfaces.IHash) error {
 }
 
 func (db *SQLDatabase) InsertSubmittedHash(hash [32]byte, tx *sql.Tx) error {
-	query := `INSERT INTO eligible_submitted VALUES ($1)`
+	query := `INSERT INTO eligible_submitted(repeat_hash) VALUES ($1)`
 	_, err := tx.Exec(query, hex.EncodeToString(hash[:]))
+	return err
+}
+
+func (db *SQLDatabase) InsertCompleted(completed int) error {
+	query := "INSERT INTO completed(block_height) VALUES($1)"
+	_, err := db.DB.Exec(query, completed)
 	return err
 }
