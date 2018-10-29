@@ -113,6 +113,8 @@ func (vw *VoteWatcher) ProcessEntry(entry interfaces.IEBEntry,
 		} else {
 			change, tryagain, err = vw.ProcessNewEligibleList(entry, dBlockHeight, dBlockTimestamp, newEntry)
 		}
+	default:
+		return false, nil
 	}
 
 	if err != nil {

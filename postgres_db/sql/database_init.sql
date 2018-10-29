@@ -100,6 +100,14 @@ create table eligible_submitted
 )
 ;
 
+create table completed
+(
+	block_height integer not null
+		constraint cmpleted_pkey
+		primary key
+)
+;
+
 create function insert_vote(param_vote_initiator character, param_signing_key character, param_signature character varying, param_title character varying, param_description character varying, param_external_href character varying, param_external_hash character varying, param_external_hash_algo character varying, param_commit_start integer, param_commit_stop integer, param_reveal_start integer, param_reveal_stop integer, param_eligible_voter_chain character, param_vote_type integer, param_vote_options character varying, param_vote_allow_abstain boolean, param_vote_compute_results_against character varying, param_vote_min_options integer, param_vote_max_options integer, param_chain_id character) returns integer
 language plpgsql
 as $$
@@ -246,6 +254,33 @@ BEGIN
 		ON CONFLICT (voter_id, eligible_list) DO UPDATE
 			-- Update Weight
 			SET weight = param_weight;
+		RETURN 1;
+	end if;
+	RETURN -1;
+END;
+$$
+;
+
+create function insert_eligible_list(param_chain_id character, param_vote_initiator character, param_nonce character varying, param_initiator_key character varying, param_initiator_signature character varying) returns integer
+language plpgsql
+as $$
+BEGIN
+	IF exists(SELECT chain_id FROM eligible_list WHERE eligible_list.chain_id = param_chain_id)
+	THEN
+		-- Already exists
+		RETURN 0;
+	ELSE
+		-- Insert data into table
+		INSERT INTO eligible_list(chain_id,
+															vote_initiator,
+															nonce,
+															initiator_key,
+															initiator_signature)
+		VALUES(param_chain_id,
+					 param_vote_initiator,
+					 param_nonce,
+					 param_initiator_key,
+					 param_initiator_signature);
 		RETURN 1;
 	end if;
 	RETURN -1;
