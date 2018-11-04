@@ -9,7 +9,7 @@ CREATE OR REPLACE FUNCTION insert_reveal(
   RETURNS INTEGER AS $$
 BEGIN
 
-  IF exists(SELECT voter_id, vote_chain FROM reveals WHERE reveals.voter_id = param_voter_id AND reveals.vote_chain == param_vote_chain)
+  IF exists(SELECT voter_id, vote_chain FROM reveals WHERE reveals.voter_id = param_voter_id AND reveals.vote_chain = param_vote_chain)
   THEN
     -- Data already exists in the table
     RETURN 0;

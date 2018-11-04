@@ -1,3 +1,11 @@
+create table completed
+(
+	block_height integer not null
+		constraint cmpleted_pkey
+		primary key
+)
+;
+
 create table proposals
 (
 	vote_initiator char(64),
@@ -30,7 +38,7 @@ create table commits
 (
 	voter_id char(64),
 	signing_key char(64),
-	signature char(64),
+	signature varchar,
 	commitment varchar,
 	id serial not null
 		constraint commits_id_pk
@@ -100,14 +108,6 @@ create table eligible_submitted
 )
 ;
 
-create table completed
-(
-	block_height integer not null
-		constraint cmpleted_pkey
-		primary key
-)
-;
-
 create function insert_vote(param_vote_initiator character, param_signing_key character, param_signature character varying, param_title character varying, param_description character varying, param_external_href character varying, param_external_hash character varying, param_external_hash_algo character varying, param_commit_start integer, param_commit_stop integer, param_reveal_start integer, param_reveal_stop integer, param_eligible_voter_chain character, param_vote_type integer, param_vote_options character varying, param_vote_allow_abstain boolean, param_vote_compute_results_against character varying, param_vote_min_options integer, param_vote_max_options integer, param_chain_id character) returns integer
 language plpgsql
 as $$
@@ -171,7 +171,7 @@ language plpgsql
 as $$
 BEGIN
 
-	IF exists(SELECT voter_id, vote_chain FROM reveals WHERE reveals.voter_id = param_voter_id AND reveals.vote_chain == param_vote_chain)
+	IF exists(SELECT voter_id, vote_chain FROM reveals WHERE reveals.voter_id = param_voter_id AND reveals.vote_chain = param_vote_chain)
 	THEN
 		-- Data already exists in the table
 		RETURN 0;
@@ -203,7 +203,7 @@ language plpgsql
 as $$
 BEGIN
 
-	IF exists(SELECT voter_id, vote_chain FROM commits WHERE commits.voter_id = param_voter_id AND commits.vote_chain == param_vote_chain)
+	IF exists(SELECT voter_id, vote_chain FROM commits WHERE commits.voter_id = param_voter_id AND commits.vote_chain = param_vote_chain)
 	THEN
 		-- Data already exists in the table
 		RETURN 0;
@@ -234,7 +234,7 @@ create function insert_eligible_voter(param_voter_id character, param_eligible_l
 language plpgsql
 as $$
 BEGIN
-	IF exists(SELECT voter_id, eligible_list FROM eligible_voters WHERE eligible_voters.voter_id = param_voter_id AND eligible_voters.eligible_list == param_eligible_list) AND param_weight = 0
+	IF exists(SELECT voter_id, eligible_list FROM eligible_voters WHERE eligible_voters.voter_id = param_voter_id AND eligible_voters.eligible_list = param_eligible_list) AND param_weight = 0
 	THEN
 		-- Removing an eligible voter
 		DELETE FROM eligible_voters WHERE voter_id = param_voter_id AND eligible_list = param_eligible_list;

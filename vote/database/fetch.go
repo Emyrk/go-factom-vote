@@ -25,6 +25,10 @@ func (s *SQLDatabase) IsEligibleListExist(chainId string) (bool, error) {
 }
 
 func exists(rows *sql.Rows, err error) (bool, error) {
+	if !rows.Next() {
+		return false, nil
+	}
+
 	if err == sql.ErrNoRows {
 		return false, nil
 	}

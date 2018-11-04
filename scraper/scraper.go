@@ -73,11 +73,12 @@ func (s *Scraper) Catchup() {
 	start := time.Now()
 	top := getNextTop()
 	CurrentTop = top
+	changes := 0
 
 MainCatchupLoop:
 	for {
 		if next%10 == 0 {
-			flog.WithFields(log.Fields{"current": next, "top": top, "time": time.Since(start)}).Info("")
+			flog.WithFields(log.Fields{"current": next, "top": top, "time": time.Since(start), "changes": changes}).Info("")
 		}
 		start = time.Now()
 		if next > top {
@@ -108,6 +109,7 @@ MainCatchupLoop:
 		// Parse Entries
 
 		height := dblock.GetDatabaseHeight()
+		hog := flog.WithField("height", height)
 		for _, e := range eblocks {
 			t := dblock.GetHeader().GetTimestamp().GetTime()
 			//nt := t
@@ -120,14 +122,17 @@ MainCatchupLoop:
 
 				entry, err := s.Factom.FetchEntry(ehash.String())
 				if err != nil {
-					errorAndWait(flog.WithFields(log.Fields{"fetch": "entry", "hash": ehash.String()}), err)
+					errorAndWait(hog.WithFields(log.Fields{"fetch": "entry", "hash": ehash.String()}), err)
 					continue MainCatchupLoop
 				}
 				change, err := s.VoteControl.ProcessEntry(entry, height, t, true)
 				if err != nil {
-					errorAndWait(flog.WithFields(log.Fields{"vote-parse": "entry", "hash": ehash.String()}), err)
+					errorAndWait(hog.WithFields(log.Fields{"vote-parse": "entry", "hash": ehash.String()}), err)
+					//continue MainCatchupLoop // TODO :Remove
 				}
-				var _ = change
+				if change {
+					changes++
+				}
 			}
 		}
 
@@ -135,11 +140,12 @@ MainCatchupLoop:
 
 		err = s.Database.InsertCompleted(int(next))
 		if err != nil {
-			errorAndWait(flog.WithField("insert", "completed"), err)
+			errorAndWait(hog.WithFields(log.Fields{"insert": "completed"}), err)
 			continue MainCatchupLoop
 		}
 		// End loop
 		next++
+		changes = 0
 	}
 }
 

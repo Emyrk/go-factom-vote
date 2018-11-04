@@ -23,9 +23,9 @@ func (db *SQLDatabase) InsertGeneric(o common.ISQLObject) error {
 	return err
 }
 
-func (db *SQLDatabase) SetRegistered(vote interfaces.IHash) error {
-	query := `UPDATE proposals SET registered = True WHERE chain_id = $1;`
-	_, err := db.DB.Exec(query, vote.String())
+func (db *SQLDatabase) SetRegistered(vote interfaces.IHash, registered bool) error {
+	query := `UPDATE proposals SET registered = $2 WHERE chain_id = $1;`
+	_, err := db.DB.Exec(query, vote.String(), registered)
 	return err
 }
 

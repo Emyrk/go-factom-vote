@@ -83,5 +83,14 @@ func TestProposalJSONMarshal(t *testing.T) {
 		t.Error(err)
 	}
 
+	j = `
+{"proposal":{"title":"Is the on-chain voting grant a success?","text":"Please tell if you think this grant was a success","externalRef":{"href":"https://the-voting-grant/vote","hash":{"value":"b950beb02d45cc9c96c198243af669b3dc57d31de994d655f506372fdec3a885","algo":"sha256"}}},"vote":{"commitStartBlockHeight":1000,"commitEndBlockHeight":2000,"revealStartBlockHeight":2001,"revealEndBlockHeight":3000,"participantsChainId":"1891a4fc0feb9a2cce9a384992da69eb032a167ca3fe4545ed22783e49c73321","type":0,"config":{"options":["yes","no","maybe"],"minOptions":1,"maxOptions":1,"acceptanceCriteria":{"minTurnout":0.5,"minSupport":0.6,"weighted":true}},"allowVoteOverwrite":true}}`
+
+	p = new(ProposalEntry)
+	err = json.Unmarshal([]byte(j), p)
+	if err != nil {
+		t.Error(err)
+	}
+
 	// TODO: Check unmarshaled values
 }

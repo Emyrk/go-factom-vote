@@ -10,6 +10,8 @@ services:
       POSTGRES_PASSWORD: password
 #    networks:
 #      database:
+    volumes:
+      - vote_postgres_volume:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
@@ -22,3 +24,7 @@ services:
 #                - subnet: 10.7.0.0/16
 #                  gateway: 10.7.1.1
 #                  ip_range: 10.7.1.0/24
+
+
+volumes:
+  vote_postgres_volume:

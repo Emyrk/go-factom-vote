@@ -1,6 +1,11 @@
 package vote
 
-import . "github.com/Emyrk/go-factom-vote/vote/common"
+import (
+	"fmt"
+
+	. "github.com/Emyrk/go-factom-vote/vote/common"
+	"github.com/FactomProject/factomd/common/interfaces"
+)
 
 // All vote modifications go through here
 func (vw *VoteWatcher) AddNewVoteProposal(v *Vote) error {
@@ -34,16 +39,21 @@ func (vw *VoteWatcher) AddCommit(v *Vote, c VoteCommit, height uint32) error {
 	return nil
 }
 
-func (vw *VoteWatcher) SetRegistered(v *Vote, registered bool) error {
+func (vw *VoteWatcher) SetRegistered(chain interfaces.IHash, registered bool) error {
 	if vw.UseMemory {
-		v.Registered = registered
+		v, _ := vw.VoteProposals[chain.Fixed()]
+		if v != nil {
+			v.Registered = registered
+		}
 		return nil
 	}
-	return vw.SQLDB.SetRegistered(v.Proposal.ProposalChain)
+
+	return vw.SQLDB.SetRegistered(chain, registered)
 }
 
-func (vw *VoteWatcher) AddNewEligibleList(e *EligibleList) error {
+func (vw *VoteWatcher) AddNewEligibleList(e *EligibleList, hash [32]byte) error {
 	if vw.UseMemory {
+		e.SubmittedEntries[hash] = true
 		vw.EligibleLists[e.ChainID.Fixed()] = e
 		return nil
 	}
@@ -52,6 +62,29 @@ func (vw *VoteWatcher) AddNewEligibleList(e *EligibleList) error {
 	if err != nil {
 		return err
 	}
+
+	tx, err := vw.SQLDB.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, v := range e.EligibleVoters {
+		err := vw.SQLDB.InsertGenericTX(&v, tx)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = vw.SQLDB.InsertSubmittedHash(hash, tx)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -68,7 +101,9 @@ func (vw *VoteWatcher) AddEligibleVoter(list *EligibleList, voter *EligibleVoter
 		return err
 	}
 
+	fmt.Println("INSERT A VOTER!!!!!!!!!!!")
 	for _, v := range voter.Content {
+		fmt.Println("INSERT VOTER", v.VoterID.String())
 		err := vw.SQLDB.InsertGenericTX(&v, tx)
 		if err != nil {
 			return err

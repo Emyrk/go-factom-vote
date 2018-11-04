@@ -9,7 +9,7 @@ CREATE OR REPLACE FUNCTION insert_commit(
   RETURNS INTEGER AS $$
 BEGIN
 
-  IF exists(SELECT voter_id, vote_chain FROM commits WHERE commits.voter_id = param_voter_id AND commits.vote_chain == param_vote_chain)
+  IF exists(SELECT voter_id, vote_chain FROM commits WHERE commits.voter_id = param_voter_id AND commits.vote_chain = param_vote_chain)
   THEN
     -- Data already exists in the table
     RETURN 0;

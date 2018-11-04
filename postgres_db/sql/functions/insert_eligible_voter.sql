@@ -6,7 +6,7 @@ CREATE OR REPLACE FUNCTION insert_eligible_voter(
   param_block_height INTEGER)
   RETURNS INTEGER AS $$
 BEGIN
-  IF exists(SELECT voter_id, eligible_list FROM eligible_voters WHERE eligible_voters.voter_id = param_voter_id AND eligible_voters.eligible_list == param_eligible_list) AND param_weight = 0
+  IF exists(SELECT voter_id, eligible_list FROM eligible_voters WHERE eligible_voters.voter_id = param_voter_id AND eligible_voters.eligible_list = param_eligible_list) AND param_weight = 0
   THEN
     -- Removing an eligible voter
     DELETE FROM eligible_voters WHERE voter_id = param_voter_id AND eligible_list = param_eligible_list;

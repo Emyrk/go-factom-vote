@@ -109,7 +109,7 @@ func (vw *VoteWatcher) ProcessEntry(entry interfaces.IEBEntry,
 		change, tryagain, err = vw.ProcessVoteRegister(entry, dBlockHeight, dBlockTimestamp, newEntry)
 	case EXT0_ELIGIBLE_VOTER_CHAIN:
 		if len(entry.ExternalIDs()) == 3 {
-
+			change, tryagain, err = vw.ProcessNewEligibleVoter(entry, dBlockHeight, dBlockTimestamp, newEntry)
 		} else {
 			change, tryagain, err = vw.ProcessNewEligibleList(entry, dBlockHeight, dBlockTimestamp, newEntry)
 		}
@@ -117,12 +117,12 @@ func (vw *VoteWatcher) ProcessEntry(entry interfaces.IEBEntry,
 		return false, nil
 	}
 
-	if err != nil {
-		return change, err
-	}
-
 	if tryagain && newEntry {
 		vw.PushEntryForLater(entry, dBlockHeight, dBlockTimestamp)
+	}
+
+	if err != nil {
+		return change, err
 	}
 
 	return change, nil
@@ -180,8 +180,8 @@ func (vw *VoteWatcher) ProcessVoteChain(entry interfaces.IEBEntry,
 		}
 	} else { // Use Postgres
 		exists, err := vw.SQLDB.IsVoteExist(entry.GetChainID().String())
-		if !exists {
-			return false, false, fmt.Errorf("vote chain already exists")
+		if exists {
+			return false, false, fmt.Errorf("vote chain already exists: %s", entry.GetChainID().String())
 		}
 
 		if err != nil {
@@ -211,7 +211,7 @@ func (vw *VoteWatcher) ProcessVoteChain(entry interfaces.IEBEntry,
 	} else { // Use Postgres for checks
 		exists, err := vw.SQLDB.IsEligibleListExist(v.Proposal.Vote.EligibleVotersChainID.String())
 		if !exists {
-			return false, false, fmt.Errorf("vote chain already exists")
+			return false, true, fmt.Errorf("no eligible voter list with chain: %s", v.Proposal.Vote.EligibleVotersChainID.String())
 		}
 
 		if err != nil {
@@ -248,7 +248,7 @@ func (vw *VoteWatcher) ProcessVoteCommit(entry interfaces.IEBEntry,
 	} else {
 		exists, err := vw.SQLDB.IsVoteExist(entry.GetChainID().String())
 		if !exists {
-			return false, false, fmt.Errorf("vote chain already exists")
+			return false, true, fmt.Errorf("vote chain does not exist for commit")
 		}
 
 		if err != nil {
@@ -294,7 +294,7 @@ func (vw *VoteWatcher) ProcessVoteReveal(entry interfaces.IEBEntry,
 	} else {
 		exists, err := vw.SQLDB.IsVoteExist(entry.GetChainID().String())
 		if !exists {
-			return false, false, fmt.Errorf("vote chain already exists")
+			return false, true, fmt.Errorf("vote chain does not exist for reveal")
 		}
 
 		if err != nil {
@@ -327,13 +327,12 @@ func (vw *VoteWatcher) ProcessVoteRegister(entry interfaces.IEBEntry,
 	dBlockTimestamp time.Time,
 	newEntry bool) (bool, bool, error) {
 
-	var v *Vote
 	var ok bool
 
 	if vw.UseMemory {
 		// Votes are indexed by the chain
 		//	This entry is in the vote-chain
-		v, ok = vw.VoteProposals[entry.GetChainID().Fixed()]
+		_, ok = vw.VoteProposals[entry.GetChainID().Fixed()]
 		if !ok {
 			// TODO: Should we allow a register before the vote exists?
 			return false, true, fmt.Errorf("vote chain does not exist to be registered")
@@ -341,7 +340,7 @@ func (vw *VoteWatcher) ProcessVoteRegister(entry interfaces.IEBEntry,
 	} else {
 		exists, err := vw.SQLDB.IsVoteExist(entry.GetChainID().String())
 		if !exists {
-			return false, false, fmt.Errorf("vote chain already exists")
+			return false, true, fmt.Errorf("vote chain does not exist to be registered")
 		}
 
 		if err != nil {
@@ -349,7 +348,7 @@ func (vw *VoteWatcher) ProcessVoteRegister(entry interfaces.IEBEntry,
 		}
 	}
 
-	err := vw.SetRegistered(v, true)
+	err := vw.SetRegistered(entry.GetChainID(), true)
 	if err != nil {
 		return false, false, err
 	}
@@ -377,9 +376,9 @@ func (vw *VoteWatcher) ProcessNewEligibleList(entry interfaces.IEBEntry,
 		}
 
 	} else {
-		exists, err := vw.SQLDB.IsVoteExist(entry.GetChainID().String())
-		if !exists {
-			return false, false, fmt.Errorf("vote chain already exists")
+		exists, err := vw.SQLDB.IsEligibleListExist(entry.GetChainID().String())
+		if exists {
+			return false, true, fmt.Errorf("eligibility list already exists")
 		}
 
 		if err != nil {
@@ -398,13 +397,24 @@ func (vw *VoteWatcher) ProcessNewEligibleList(entry interfaces.IEBEntry,
 	err = json.Unmarshal(entry.GetContent(), &voters)
 	if err == nil {
 		for _, v := range voters {
+			v.BlockHeight = int(dBlockHeight)
+			v.EligibleList.SetBytes(entry.GetChainID().Bytes())
+			v.EntryHash.SetBytes(entry.GetHash().Bytes())
 			list.EligibleVoters[v.VoterID.Fixed()] = v
 		}
 	}
 
 	list.EligibilityHeader = *head
 	list.ChainID = entry.GetChainID()
-	err = vw.AddNewEligibleList(list)
+
+	data, err := entry.MarshalBinary()
+	if err != nil {
+		return false, false, err
+	}
+
+	hash := sha256.Sum256(data)
+
+	err = vw.AddNewEligibleList(list, hash)
 	if err != nil {
 		return false, false, err
 	}
@@ -429,14 +439,14 @@ func (vw *VoteWatcher) ProcessNewEligibleVoter(entry interfaces.IEBEntry,
 		// Votes are indexed by the chain
 		//	This entry is in the vote-chain
 		list, ok = vw.EligibleLists[entry.GetChainID().Fixed()]
-		if ok {
+		if !ok {
 			// Already here
-			return false, false, fmt.Errorf("eligibility list already exists")
+			return false, false, fmt.Errorf("eligibility list does not exist")
 		}
 	} else {
 		exists, err := vw.SQLDB.IsEligibleListExist(entry.GetChainID().String())
 		if !exists {
-			return false, false, fmt.Errorf("vote chain already exists")
+			return false, true, fmt.Errorf("eligibility list does not exist")
 		}
 
 		if err != nil {
@@ -457,7 +467,7 @@ func (vw *VoteWatcher) ProcessNewEligibleVoter(entry interfaces.IEBEntry,
 	} else {
 		exists, err := vw.SQLDB.IsRepeatedEntryExists(hex.EncodeToString(hash[:]))
 		if exists {
-			return false, false, fmt.Errorf("repeated eligible entry tossed")
+			return false, true, fmt.Errorf("repeated eligible entry tossed")
 		}
 
 		if err != nil {
