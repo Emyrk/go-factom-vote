@@ -30,7 +30,9 @@ create table proposals
 	chain_id char(64) not null
 		constraint proposals_chain_id_pk
 		primary key,
-	registered boolean
+	registered boolean,
+	entry_hash char(64),
+	block_height integer
 )
 ;
 
@@ -49,7 +51,7 @@ create table commits
 )
 ;
 
-create index commits_vote_index
+create unique index commits_vote_index
 	on commits (voter_id, vote_chain)
 ;
 
@@ -95,6 +97,7 @@ create table eligible_voters
 	weight integer,
 	entry_hash char(64) not null,
 	block_height integer,
+	signing_keys varchar,
 	constraint eligible_voters_pk
 	primary key (voter_id, eligible_list)
 )
@@ -108,7 +111,165 @@ create table eligible_submitted
 )
 ;
 
-create function insert_vote(param_vote_initiator character, param_signing_key character, param_signature character varying, param_title character varying, param_description character varying, param_external_href character varying, param_external_hash character varying, param_external_hash_algo character varying, param_commit_start integer, param_commit_stop integer, param_reveal_start integer, param_reveal_stop integer, param_eligible_voter_chain character, param_vote_type integer, param_vote_options character varying, param_vote_allow_abstain boolean, param_vote_compute_results_against character varying, param_vote_min_options integer, param_vote_max_options integer, param_chain_id character) returns integer
+create table repeated_commits
+(
+	commitment varchar not null,
+	voter_id char(64) not null,
+	vote_chain char(64) not null,
+	block_height integer,
+	entry_hash char(64),
+	constraint repeated_commits_vote_chain_voter_id_commitment_pk
+	primary key (vote_chain, voter_id, commitment)
+)
+;
+
+create table repeated_reveals
+(
+	vote varchar not null,
+	vote_chain char(64) not null,
+	block_height integer,
+	entry_hash char(64),
+	voter_id char(64) not null,
+	constraint repeated_reveals_vote_chain_voter_id_vote_pk
+	primary key (vote_chain, voter_id, vote)
+)
+;
+
+create function insert_commit(param_voter_id character, param_signing_key character, param_signature character varying, param_commitment character varying, param_vote_chain character, param_entry_hash character, param_block_height integer) returns integer
+language plpgsql
+as $$
+DECLARE
+	com_start INTEGER;
+	com_stop INTEGER;
+	elig_chain CHAR(64);
+BEGIN
+
+	IF exists(SELECT vote_chain, voter_id, commitment FROM repeated_commits WHERE
+		repeated_commits.vote_chain = param_vote_chain AND repeated_commits.voter_id = param_voter_id AND repeated_commits.commitment = param_commitment)
+	THEN
+		-- This is a replay
+		RETURN 0;
+	ELSE
+		-- Need to determine the eligible list to use
+		SELECT eligible_voter_chain INTO elig_chain FROM proposals WHERE chain_id = param_vote_chain;
+
+
+		-- First check if the key is valid for the voter
+		IF NOT exists(
+				SELECT signing_keys FROM eligible_voters WHERE voter_id = param_voter_id
+																											 AND eligible_list = elig_chain
+																											 AND signing_keys LIKE concat('%', param_signing_key, '%')
+		) THEN
+			-- This signing_key is not in the list of valid keys for the voter
+			RETURN -2;
+		END IF;
+
+		-- Check if we are within the commitment phase
+		SELECT commit_start, commit_stop INTO com_start, com_stop FROM proposals WHERE chain_id = param_vote_chain;
+		IF param_block_height > com_stop OR param_block_height < com_start
+		THEN
+			-- Outside range of commitment phase
+			RETURN -3;
+		END IF;
+
+
+
+		-- Insert data into table
+		INSERT INTO commits(voter_id,
+												signing_key,
+												signature,
+												commitment,
+												vote_chain,
+												entry_hash,
+												block_height)
+		VALUES(param_voter_id,
+					 param_signing_key,
+					 param_signature,
+					 param_commitment,
+					 param_vote_chain,
+					 param_entry_hash,
+					 param_block_height)
+		ON CONFLICT (voter_id, vote_chain) DO UPDATE
+			SET
+				signing_key = param_signing_key,
+				signature = param_signature,
+				commitment = param_commitment,
+				entry_hash = param_entry_hash,
+				block_height = param_block_height
+		;
+
+		INSERT INTO repeated_commits(vote_chain, voter_id, commitment, block_height, entry_hash)
+		VALUES (param_vote_chain, param_voter_id, param_commitment, param_block_height, param_entry_hash);
+		RETURN 1;
+	end if;
+	RETURN -1;
+END;
+$$
+;
+
+create function insert_eligible_list(param_chain_id character, param_vote_initiator character, param_nonce character varying, param_initiator_key character varying, param_initiator_signature character varying) returns integer
+language plpgsql
+as $$
+BEGIN
+	IF exists(SELECT chain_id FROM eligible_list WHERE eligible_list.chain_id = param_chain_id)
+	THEN
+		-- Already exists
+		RETURN 0;
+	ELSE
+		-- Insert data into table
+		INSERT INTO eligible_list(chain_id,
+															vote_initiator,
+															nonce,
+															initiator_key,
+															initiator_signature)
+		VALUES(param_chain_id,
+					 param_vote_initiator,
+					 param_nonce,
+					 param_initiator_key,
+					 param_initiator_signature);
+		RETURN 1;
+	end if;
+	RETURN -1;
+END;
+$$
+;
+
+create function insert_eligible_voter(param_voter_id character, param_eligible_list character, param_weight integer, param_entry_hash character, param_block_height integer, param_signing_keys character varying) returns integer
+language plpgsql
+as $$
+BEGIN
+	IF exists(SELECT voter_id, eligible_list FROM eligible_voters WHERE eligible_voters.voter_id = param_voter_id AND eligible_voters.eligible_list = param_eligible_list) AND param_weight = 0
+	THEN
+		-- Removing an eligible voter
+		DELETE FROM eligible_voters WHERE voter_id = param_voter_id AND eligible_list = param_eligible_list;
+		RETURN 0;
+	ELSE
+		-- Insert data into table
+		INSERT INTO eligible_voters(voter_id,
+																eligible_list,
+																weight,
+																entry_hash,
+																block_height,
+																signing_keys)
+		VALUES(param_voter_id,
+					 param_eligible_list,
+					 param_weight,
+					 param_entry_hash,
+					 param_block_height,
+					 param_signing_keys)
+		ON CONFLICT (voter_id, eligible_list) DO UPDATE
+			-- Update Weight
+			SET weight = param_weight,
+				entry_hash = param_entry_hash,
+				block_height = param_block_height;
+		RETURN 1;
+	end if;
+	RETURN -1;
+END;
+$$
+;
+
+create function insert_vote(param_vote_initiator character, param_signing_key character, param_signature character varying, param_title character varying, param_description character varying, param_external_href character varying, param_external_hash character varying, param_external_hash_algo character varying, param_commit_start integer, param_commit_stop integer, param_reveal_start integer, param_reveal_stop integer, param_eligible_voter_chain character, param_vote_type integer, param_vote_options character varying, param_vote_allow_abstain boolean, param_vote_compute_results_against character varying, param_vote_min_options integer, param_vote_max_options integer, param_chain_id character, param_entry_hash character, param_block_height integer) returns integer
 language plpgsql
 as $$
 BEGIN
@@ -138,7 +299,9 @@ BEGIN
 													vote_compute_results_against,
 													vote_min_options,
 													vote_max_options,
-													chain_id)
+													chain_id,
+													entry_hash,
+													block_height)
 		VALUES(param_vote_initiator,
 			param_signing_key,
 			param_signature,
@@ -150,15 +313,17 @@ BEGIN
 			param_commit_start,
 			param_commit_stop,
 			param_reveal_start,
-					 param_reveal_stop,
-					 param_eligible_voter_chain,
-					 param_vote_type,
-					 param_vote_options,
-					 param_vote_allow_abstain,
-					 param_vote_compute_results_against,
-					 param_vote_min_options,
-					 param_vote_max_options,
-					 param_chain_id);
+			param_reveal_stop,
+			param_eligible_voter_chain,
+			param_vote_type,
+			param_vote_options,
+			param_vote_allow_abstain,
+			param_vote_compute_results_against,
+			param_vote_min_options,
+			param_vote_max_options,
+			param_chain_id,
+			param_entry_hash,
+					 param_block_height);
 		RETURN 1;
 	end if;
 	RETURN -1;
@@ -166,16 +331,30 @@ END;
 $$
 ;
 
-create function insert_reveal(param_voter_id character, param_vote character, param_secret character varying, param_hmac_algo character varying, param_vote_chain character, param_entry_hash character, param_block_height integer) returns integer
+create function insert_reveal(param_voter_id character, param_vote character varying, param_secret character varying, param_hmac_algo character varying, param_vote_chain character, param_entry_hash character, param_block_height integer) returns integer
 language plpgsql
 as $$
+DECLARE
+	rev_start INTEGER;
+	rev_stop INTEGER;
+	elig_chain CHAR(64);
 BEGIN
 
-	IF exists(SELECT voter_id, vote_chain FROM reveals WHERE reveals.voter_id = param_voter_id AND reveals.vote_chain = param_vote_chain)
+	IF exists(SELECT vote_chain, voter_id, vote FROM repeated_reveals WHERE
+		repeated_reveals.vote_chain = param_vote_chain AND repeated_reveals.voter_id = param_voter_id AND repeated_reveals.vote = param_vote)
 	THEN
-		-- Data already exists in the table
+		-- This is a replay
 		RETURN 0;
 	ELSE
+
+		-- Check if we are within the commitment phase
+		SELECT reveal_start, reveal_stop INTO rev_start, rev_stop FROM proposals WHERE chain_id = param_vote_chain;
+		IF param_block_height > rev_stop OR param_block_height < rev_start
+		THEN
+			-- Outside range of reveal phase
+			RETURN -3;
+		END IF;
+
 		-- Insert data into table
 		INSERT INTO reveals(voter_id,
 												vote,
@@ -191,96 +370,9 @@ BEGIN
 					 param_vote_chain,
 					 param_entry_hash,
 					 param_block_height);
-		RETURN 1;
-	end if;
-	RETURN -1;
-END;
-$$
-;
 
-create function insert_commit(param_voter_id character, param_signing_key character, param_signature character varying, param_commitment character varying, param_vote_chain character, param_entry_hash character, param_block_height integer) returns integer
-language plpgsql
-as $$
-BEGIN
-
-	IF exists(SELECT voter_id, vote_chain FROM commits WHERE commits.voter_id = param_voter_id AND commits.vote_chain = param_vote_chain)
-	THEN
-		-- Data already exists in the table
-		RETURN 0;
-	ELSE
-		-- Insert data into table
-		INSERT INTO commits(voter_id,
-												signing_key,
-												signature,
-												commitment,
-												vote_chain,
-												entry_hash,
-												block_height)
-		VALUES(param_voter_id,
-					 param_signing_key,
-					 param_signature,
-					 param_commitment,
-					 param_vote_chain,
-					 param_entry_hash,
-					 param_block_height);
-		RETURN 1;
-	end if;
-	RETURN -1;
-END;
-$$
-;
-
-create function insert_eligible_voter(param_voter_id character, param_eligible_list character, param_weight integer, param_entry_hash character, param_block_height integer) returns integer
-language plpgsql
-as $$
-BEGIN
-	IF exists(SELECT voter_id, eligible_list FROM eligible_voters WHERE eligible_voters.voter_id = param_voter_id AND eligible_voters.eligible_list = param_eligible_list) AND param_weight = 0
-	THEN
-		-- Removing an eligible voter
-		DELETE FROM eligible_voters WHERE voter_id = param_voter_id AND eligible_list = param_eligible_list;
-		RETURN 0;
-	ELSE
-		-- Insert data into table
-		INSERT INTO eligible_voters(voter_id,
-																eligible_list,
-																weight,
-																entry_hash,
-																block_height)
-		VALUES(param_voter_id,
-					 param_eligible_list,
-					 param_weight,
-					 param_entry_hash,
-					 param_block_height)
-		ON CONFLICT (voter_id, eligible_list) DO UPDATE
-			-- Update Weight
-			SET weight = param_weight;
-		RETURN 1;
-	end if;
-	RETURN -1;
-END;
-$$
-;
-
-create function insert_eligible_list(param_chain_id character, param_vote_initiator character, param_nonce character varying, param_initiator_key character varying, param_initiator_signature character varying) returns integer
-language plpgsql
-as $$
-BEGIN
-	IF exists(SELECT chain_id FROM eligible_list WHERE eligible_list.chain_id = param_chain_id)
-	THEN
-		-- Already exists
-		RETURN 0;
-	ELSE
-		-- Insert data into table
-		INSERT INTO eligible_list(chain_id,
-															vote_initiator,
-															nonce,
-															initiator_key,
-															initiator_signature)
-		VALUES(param_chain_id,
-					 param_vote_initiator,
-					 param_nonce,
-					 param_initiator_key,
-					 param_initiator_signature);
+		INSERT INTO repeated_reveals(vote_chain, voter_id, vote, block_height, entry_hash)
+		VALUES (param_vote_chain, param_voter_id, param_vote, param_block_height, param_entry_hash);
 		RETURN 1;
 	end if;
 	RETURN -1;
