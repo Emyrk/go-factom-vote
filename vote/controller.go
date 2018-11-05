@@ -52,7 +52,7 @@ func (c *Controller) parseVoteChain(votechain interfaces.IHash) error {
 		return fmt.Errorf("fetch first entry: %s", err.Error())
 	}
 
-	prop, err := NewProposalEntry(entry.Entry)
+	prop, err := NewProposalEntry(entry.Entry, 0)
 	if err != nil {
 		return fmt.Errorf("parsing prop: %s", err.Error())
 	}

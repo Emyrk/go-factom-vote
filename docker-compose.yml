@@ -1,0 +1,60 @@
+version: "2"
+
+services:
+  db:
+    container_name: voting-postgres-db
+    build:
+      context: .
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: password
+#    networks:
+#      database:
+    volumes:
+      - vote_postgres_volume:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  factomd:
+    container_name: voting-factomd
+#    image: factominc/factomd:v5.1.0-alpine
+    build:
+       context: .
+       dockerfile: Dockerfile.factomd
+    networks:
+        - vote_app
+#    depends_on:
+#        - postgres_db
+    ports:
+        - "8090:8090"
+        - "8088:8088"
+    volumes:
+      - vote_factomd_volume:/root/.factom/
+    env_file:
+      - factomd.env
+
+
+  factom-walletd:
+    container_name: voting-factom-walletd
+    build:
+       context: .
+       dockerfile: Dockerfile.wallet
+    networks:
+        - vote_app
+#    depends_on:
+#        - postgres_db
+    ports:
+        - "8089:8089"
+    volumes:
+      - vote_walletd_volume:/root/.factom/
+    env_file:
+      - factomd.env
+
+
+networks:
+  vote_app:
+
+volumes:
+  vote_postgres_volume:
+  vote_factomd_volume:
+  vote_walletd_volume:

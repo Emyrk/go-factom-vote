@@ -1,37 +1,51 @@
 package vote
 
 import (
+	"database/sql"
+
 	"fmt"
 
+	"strings"
+
+	"encoding/hex"
+
 	. "github.com/Emyrk/go-factom-vote/vote/common"
+	"github.com/FactomProject/factom"
 	"github.com/FactomProject/factomd/common/interfaces"
 )
 
 // All vote modifications go through here
 func (vw *VoteWatcher) AddNewVoteProposal(v *Vote) error {
-	if vw.UseMemory {
-		vw.VoteProposals[v.Proposal.ProposalChain.Fixed()] = v
-		return nil
-	}
 	err := vw.SQLDB.InsertGeneric(v)
 	return err
 }
 
-func (vw *VoteWatcher) AddReveal(v *Vote, r VoteReveal, height uint32) error {
-	if vw.UseMemory {
-		return v.AddReveal(r, height)
+func (vw *VoteWatcher) AddReveal(r VoteReveal, height uint32) error {
+	// Find commit
+	partialCommit, err := vw.SQLDB.FetchCommitForReveal(r)
+	if err != nil {
+		return err
 	}
-	err := vw.SQLDB.InsertGeneric(&r)
+
+	// Validate reveal against commit
+	commitment, _ := hex.DecodeString(partialCommit.Commitment)
+	secret, _ := hex.DecodeString(r.Content.Secret)
+
+	if !CheckMAC(r.Content.HmacAlgo,
+		[]byte(strings.Join(r.Content.VoteOptions, "")),
+		commitment,
+		secret) {
+		return fmt.Errorf("reveal does not validate hmac against commit.")
+	}
+
+	err = vw.SQLDB.InsertGeneric(&r)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (vw *VoteWatcher) AddCommit(v *Vote, c VoteCommit, height uint32) error {
-	if vw.UseMemory {
-		return v.AddCommit(c, height)
-	}
+func (vw *VoteWatcher) AddCommit(c VoteCommit, height uint32) error {
 	err := vw.SQLDB.InsertGeneric(&c)
 	if err != nil {
 		return err
@@ -40,24 +54,10 @@ func (vw *VoteWatcher) AddCommit(v *Vote, c VoteCommit, height uint32) error {
 }
 
 func (vw *VoteWatcher) SetRegistered(chain interfaces.IHash, registered bool) error {
-	if vw.UseMemory {
-		v, _ := vw.VoteProposals[chain.Fixed()]
-		if v != nil {
-			v.Registered = registered
-		}
-		return nil
-	}
-
 	return vw.SQLDB.SetRegistered(chain, registered)
 }
 
 func (vw *VoteWatcher) AddNewEligibleList(e *EligibleList, hash [32]byte) error {
-	if vw.UseMemory {
-		e.SubmittedEntries[hash] = true
-		vw.EligibleLists[e.ChainID.Fixed()] = e
-		return nil
-	}
-
 	err := vw.SQLDB.InsertGeneric(e)
 	if err != nil {
 		return err
@@ -69,7 +69,7 @@ func (vw *VoteWatcher) AddNewEligibleList(e *EligibleList, hash [32]byte) error 
 	}
 
 	for _, v := range e.EligibleVoters {
-		err := vw.SQLDB.InsertGenericTX(&v, tx)
+		err := vw.addVoter(&v, tx)
 		if err != nil {
 			return err
 		}
@@ -88,23 +88,14 @@ func (vw *VoteWatcher) AddNewEligibleList(e *EligibleList, hash [32]byte) error 
 	return nil
 }
 
-func (vw *VoteWatcher) AddEligibleVoter(list *EligibleList, voter *EligibleVoterEntry, hash [32]byte) error {
-	if vw.UseMemory {
-		list.SubmittedEntries[hash] = true
-
-		err := list.AddVoter(voter)
-		return err
-	}
-
+func (vw *VoteWatcher) AddEligibleVoter(voter *EligibleVoterEntry, hash [32]byte) error {
 	tx, err := vw.SQLDB.Begin()
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("INSERT A VOTER!!!!!!!!!!!")
 	for _, v := range voter.Content {
-		fmt.Println("INSERT VOTER", v.VoterID.String())
-		err := vw.SQLDB.InsertGenericTX(&v, tx)
+		err := vw.addVoter(&v, tx)
 		if err != nil {
 			return err
 		}
@@ -121,4 +112,29 @@ func (vw *VoteWatcher) AddEligibleVoter(list *EligibleList, voter *EligibleVoter
 	}
 
 	return nil
+}
+
+func (vw *VoteWatcher) addVoter(voter *EligibleVoter, tx *sql.Tx) error {
+	// Must get all the voting keys for this voter
+	id := &factom.Identity{}
+	id.ChainID = voter.VoterID.String()
+	keys, err := id.GetKeysAtHeight(int64(voter.BlockHeight))
+	if err != nil {
+		return err
+	}
+
+	for _, k := range keys {
+		voter.SigningKeys = append(voter.SigningKeys, fmt.Sprintf("%x", k.Pub[:]))
+	}
+
+	return vw.SQLDB.InsertGenericTX(voter, tx)
+}
+
+// Retrieval based questions
+func (vw *VoteWatcher) IsEligibleListExist(chainid string) (bool, error) {
+	return vw.SQLDB.IsEligibleListExist(chainid)
+}
+
+func (vw *VoteWatcher) IsEligibleListExistWithKey(chainid string) (bool, string, error) {
+	return vw.SQLDB.IsEligibleListExistWithKey(chainid)
 }

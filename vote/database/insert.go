@@ -19,6 +19,9 @@ func (db *SQLDatabase) InsertGenericTX(o common.ISQLObject, tx *sql.Tx) error {
 
 func (db *SQLDatabase) InsertGeneric(o common.ISQLObject) error {
 	query := fmt.Sprintf(`SELECT %s(%s)`, o.InsertFunction(), common.InsertQueryParams(o))
+	if _, ok := o.(*common.VoteReveal); ok {
+		fmt.Println(query)
+	}
 	_, err := db.DB.Exec(query)
 	return err
 }

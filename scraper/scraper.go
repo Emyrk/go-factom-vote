@@ -14,8 +14,9 @@ import (
 var scraperlog = log.WithFields(log.Fields{"file": "scraper.go"})
 
 type Scraper struct {
-	Factom   Fetcher
-	Database *database.SQLDatabase
+	Factom          Fetcher
+	Database        *database.SQLDatabase
+	WalletdLocation string
 
 	// IdentityControl
 	VoteControl *vote.VoteWatcher
@@ -42,6 +43,8 @@ func NewScraper(host string, port int, config *database.SqlConfig) (*Scraper, er
 		return nil, err
 	}
 	flog.Infof("Postgres database connected")
+
+	s.WalletdLocation = "localhost:8089"
 
 	s.VoteControl = vote.NewVoteWatcher()
 	// TODO: Sync Vote Control
@@ -127,7 +130,7 @@ MainCatchupLoop:
 				}
 				change, err := s.VoteControl.ProcessEntry(entry, height, t, true)
 				if err != nil {
-					errorAndWait(hog.WithFields(log.Fields{"vote-parse": "entry", "hash": ehash.String()}), err)
+					hog.WithFields(log.Fields{"vote-parse": "entry", "hash": ehash.String()}).Error(err)
 					//continue MainCatchupLoop // TODO :Remove
 				}
 				if change {

@@ -155,13 +155,24 @@ func NewVoteCommitFromEntry(entry interfaces.IEBEntry, blockHeight int) (*VoteCo
 	c := new(VoteCommit)
 	c.VoterID = new(primitives.Hash)
 	c.VoterID.SetBytes(entry.ExternalIDs()[1])
-	c.VoterKey.UnmarshalBinary(entry.ExternalIDs()[2])
+	err := c.VoterKey.UnmarshalBinary(entry.ExternalIDs()[2])
+	if err != nil {
+		return nil, err
+	}
+
 	c.Signature.SetSignature(entry.ExternalIDs()[3])
 	c.VoteChain = entry.GetChainID()
 	c.EntryHash = entry.GetHash()
 	c.BlockHeight = blockHeight
 
-	err := json.Unmarshal(entry.GetContent(), &c.Content)
+	// Check validity
+	c.Signature.SetPub(c.VoterKey[:])
+	signData := computeSha512(append(entry.GetChainID().Bytes(), entry.GetContent()[:]...))
+	if !c.Signature.Verify(signData) {
+		return nil, fmt.Errorf("commit signature does not match (key, content) pair")
+	}
+
+	err = json.Unmarshal(entry.GetContent(), &c.Content)
 	if err != nil {
 		return nil, err
 	}

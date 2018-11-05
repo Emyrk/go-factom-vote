@@ -5,6 +5,8 @@ import (
 
 	"encoding/json"
 
+	"encoding/hex"
+
 	"github.com/FactomProject/factomd/common/interfaces"
 	"github.com/FactomProject/factomd/common/primitives"
 )
@@ -48,6 +50,12 @@ func NewEligibleVoterHeader(entry interfaces.IEBEntry) (*EligibleVoterHeader, er
 	if err != nil {
 		return nil, err
 	}
+	e.InitiatorSignature.SetPub(e.InitiatorKey[:])
+
+	signData := computeSha512(append(e.Nonce.Bytes(), entry.GetContent()...))
+	if !e.InitiatorSignature.Verify(signData) {
+		return nil, fmt.Errorf("signature is not valid")
+	}
 
 	return e, nil
 }
@@ -59,7 +67,7 @@ type EligibleVoterEntry struct {
 	Content []EligibleVoter
 }
 
-func NewEligibleVoterEntry(entry interfaces.IEBEntry, blockHeight int) (*EligibleVoterEntry, error) {
+func NewEligibleVoterEntry(entry interfaces.IEBEntry, blockHeight int, signingkey string) (*EligibleVoterEntry, error) {
 	if len(entry.ExternalIDs()) != 3 {
 		return nil, fmt.Errorf("expected 3 extids, found %d", len(entry.ExternalIDs()))
 	}
@@ -74,6 +82,13 @@ func NewEligibleVoterEntry(entry interfaces.IEBEntry, blockHeight int) (*Eligibl
 	err = e.InitiatorSignature.SetSignature(entry.ExternalIDs()[2])
 	if err != nil {
 		return nil, err
+	}
+	key, _ := hex.DecodeString(signingkey)
+	e.InitiatorSignature.SetPub(key)
+	signData := computeSha512(append(entry.GetChainID().Bytes(), append(e.Nonce.Bytes(), entry.GetContent()...)...))
+
+	if !e.InitiatorSignature.Verify(signData) {
+		return nil, fmt.Errorf("signature is invalid")
 	}
 
 	err = json.Unmarshal(entry.GetContent(), e.Content)
@@ -91,11 +106,17 @@ func NewEligibleVoterEntry(entry interfaces.IEBEntry, blockHeight int) (*Eligibl
 }
 
 type EligibleVoter struct {
-	VoterID      primitives.Hash `json:"voterId"`
-	VoteWeight   int             `json:"weight"`
+	// Given by Entry
+	VoterID    primitives.Hash `json:"voterId"`
+	VoteWeight int             `json:"weight"`
+
+	// Given by entry context
 	BlockHeight  int             `json:"blockHeight"`
 	EligibleList primitives.Hash `json:"eligibleList"`
 	EntryHash    primitives.Hash `json:"entryHash"`
+
+	// Given by factom-walletd
+	SigningKeys []string `json:"keys"`
 }
 
 func NewEligibleVoter() *EligibleVoter {

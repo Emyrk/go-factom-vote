@@ -18,7 +18,7 @@ func (v *Vote) InsertFunction() string {
 }
 
 func (v *Vote) ScanRow(row SQLRowWithScan) (*Vote, error) {
-	var vi, sigKey, sig, hash, egchain, options, chain string
+	var vi, sigKey, sig, hash, egchain, options, chain, entry string
 
 	err := row.Scan(
 		&vi,
@@ -41,6 +41,8 @@ func (v *Vote) ScanRow(row SQLRowWithScan) (*Vote, error) {
 		&v.Proposal.Vote.Config.MinOptions,
 		&v.Proposal.Vote.Config.MaxOptions,
 		&chain,
+		&entry,
+		&v.Proposal.BlockHeight,
 	)
 	if err != nil {
 		return nil, err
@@ -68,19 +70,22 @@ func (v Vote) SelectRows() string {
 			vote_compute_results_against,
 			vote_min_options,
 			vote_max_options,
-			chain_id`
+			chain_id,
+			entry_hash,
+			block_height`
 }
 
 func (v *Vote) RowValuePointers() []interface{} {
 	data, _ := v.Proposal.InitiatorSignature.MarshalBinary()
-	vi, sigKey, sig, exrefHash, egchain, options, chain :=
+	vi, sigKey, sig, exrefHash, egchain, options, chain, eHash :=
 		v.Proposal.VoteInitiator.String(), // Vote Initiator
 		v.Proposal.InitiatorKey.String(), // SigKey
 		hex.EncodeToString(data), // Signature
 		v.Proposal.Proposal.ExternalRef.Hash.Value.String(), // External Hash
 		v.Proposal.Vote.EligibleVotersChainID.String(), // Eligible Voter Chain
 		strings.Join(v.Proposal.Vote.Config.Options, ","), // Vote Options
-		v.Proposal.ProposalChain.String()
+		v.Proposal.ProposalChain.String(),
+		v.Proposal.EntryHash.String()
 
 	return []interface{}{
 		&vi,
@@ -102,7 +107,9 @@ func (v *Vote) RowValuePointers() []interface{} {
 		&v.Proposal.Vote.Config.ComputeResultsAgainst,
 		&v.Proposal.Vote.Config.MinOptions,
 		&v.Proposal.Vote.Config.MaxOptions,
-		&chain}
+		&chain,
+		&eHash,
+		&v.Proposal.BlockHeight}
 }
 
 // Commit
@@ -330,14 +337,16 @@ func (v EligibleVoter) SelectRows() string {
 			eligible_list,
 			weight,
 			entry_hash,
-			block_height`
+			block_height,
+			signing_keys`
 }
 
 func (v *EligibleVoter) RowValuePointers() []interface{} {
-	id, list, ehash :=
+	id, list, ehash, keys :=
 		v.VoterID.String(), // Chain_id
 		v.EligibleList.String(),
-		v.EntryHash.String()
+		v.EntryHash.String(),
+		strings.Join(v.SigningKeys, ",")
 
 	return []interface{}{
 		&id,
@@ -345,5 +354,6 @@ func (v *EligibleVoter) RowValuePointers() []interface{} {
 		&v.VoteWeight,
 		&ehash,
 		&v.BlockHeight,
+		&keys,
 	}
 }

@@ -18,7 +18,9 @@ CREATE OR REPLACE FUNCTION insert_vote(
   param_vote_compute_results_against varchar,
   param_vote_min_options integer,
   param_vote_max_options integer,
-  param_chain_id char(64))
+  param_chain_id char(64),
+  param_entry_hash CHAR(64),
+  param_block_height INTEGER)
   RETURNS INTEGER AS $$
 BEGIN
 
@@ -47,7 +49,9 @@ BEGIN
      vote_compute_results_against,
      vote_min_options,
      vote_max_options,
-     chain_id)
+     chain_id,
+     entry_hash,
+     block_height)
     VALUES(param_vote_initiator,
       param_signing_key,
       param_signature,
@@ -67,7 +71,9 @@ BEGIN
       param_vote_compute_results_against,
       param_vote_min_options,
       param_vote_max_options,
-      param_chain_id);
+      param_chain_id,
+      param_entry_hash,
+      param_block_height);
     RETURN 1;
   end if;
   RETURN -1;

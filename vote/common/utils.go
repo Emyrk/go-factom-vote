@@ -8,7 +8,18 @@ import (
 
 	"strings"
 
+	"crypto/sha512"
+
+	"crypto/hmac"
+	"crypto/sha256"
+
+	"hash"
+
+	"crypto/md5"
+	"crypto/sha1"
+
 	"github.com/lib/pq"
+	log "github.com/sirupsen/logrus"
 )
 
 var paramstring = regexp.MustCompile(`,\s*`)
@@ -67,4 +78,33 @@ func RowValuesFromPointer(pointers []interface{}) []interface{} {
 
 type SQLRowWithScan interface {
 	Scan(dest ...interface{}) error
+}
+
+func computeSha512(data []byte) []byte {
+	h := sha512.New()
+	h.Write(data)
+	return h.Sum(nil)
+}
+
+// CheckMAC reports whether messageMAC is a valid HMAC tag for message.
+func CheckMAC(algo string, message, messageMAC, key []byte) bool {
+	var f func() hash.Hash
+	switch algo {
+	case "sha256":
+		f = sha256.New
+	case "sha512":
+		f = sha512.New
+	case "sha1":
+		f = sha1.New
+	case "md5":
+		f = md5.New
+	default:
+		log.WithFields(log.Fields{"pkg": "utls", "algo": algo}).Errorf("Hmac algo not supported")
+		return false
+	}
+
+	mac := hmac.New(f, key)
+	mac.Write(message)
+	expectedMAC := mac.Sum(nil)
+	return hmac.Equal(messageMAC, expectedMAC)
 }

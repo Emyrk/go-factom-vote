@@ -21,9 +21,13 @@ type ProposalEntry struct {
 	// Entry Content
 	Proposal ProposalContent `json:"proposal"`
 	Vote     VoteContent     `json:"vote"`
+
+	// Entry Context
+	BlockHeight int             `json:"block_height"`
+	EntryHash   primitives.Hash `json:"entry_hash"`
 }
 
-func NewProposalEntry(entry interfaces.IEBEntry) (*ProposalEntry, error) {
+func NewProposalEntry(entry interfaces.IEBEntry, dbheight int) (*ProposalEntry, error) {
 	if len(entry.ExternalIDs()) != 5 {
 		return nil, fmt.Errorf("expected 5 external ids, found %d", len(entry.ExternalIDs()))
 	}
@@ -31,35 +35,32 @@ func NewProposalEntry(entry interfaces.IEBEntry) (*ProposalEntry, error) {
 	p := new(ProposalEntry)
 	p.ProposalChain = entry.GetChainID()
 	p.ProtocolVersion = 0 // TODO: Parse protocol version
-	//hash, err := primitives.HexToHash(string(entry.ExternalIDs()[2]))
-	//if err != nil {
-	//	return nil, fmt.Errorf("(extid[2]): %s", err.Error())
-	//}
 	p.VoteInitiator = new(primitives.Hash)
 	p.VoteInitiator.SetBytes(entry.ExternalIDs()[2]) // = hash
-
-	//b, err := hex.DecodeString(string(entry.ExternalIDs()[3]))
-	//if err != nil {
-	//	return nil, fmt.Errorf("(extid[3]): %s", err.Error())
-	//}
 	err := p.InitiatorKey.UnmarshalBinary(entry.ExternalIDs()[3])
 	if err != nil {
 		return nil, fmt.Errorf("(extid[3]): %s", err.Error())
 	}
 
-	//sig, err := hex.DecodeString(string(entry.ExternalIDs()[4]))
-	//if err != nil {
-	//	return nil, fmt.Errorf("(extid[4]): %s", err.Error())
-	//}
 	err = p.InitiatorSignature.SetSignature(entry.ExternalIDs()[4])
 	if err != nil {
 		return nil, fmt.Errorf("(extid[4]): %s", err.Error())
+	}
+	p.InitiatorSignature.SetPub(p.InitiatorKey[:])
+
+	// Validate content
+	signData := computeSha512(entry.GetContent())
+	if !p.InitiatorSignature.Verify(signData) {
+		return nil, fmt.Errorf("Invalid signature on proposal")
 	}
 
 	err = json.Unmarshal(entry.GetContent(), p)
 	if err != nil {
 		return nil, err
 	}
+
+	p.EntryHash.SetBytes(entry.GetHash().Bytes())
+	p.BlockHeight = dbheight
 
 	return p, nil
 }
