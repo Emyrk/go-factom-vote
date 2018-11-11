@@ -1,0 +1,58 @@
+# Vote Schema for everything (except results)
+{
+	proposal(chain:"b69d30c20e18818c06eea444bb9bd43d184e259a3013ddc508399756b23e0b20"){
+    voteChainId
+    definition{
+      phasesBlockHeights
+      config{
+        options
+        minOptions
+        maxOptions
+        acceptanceCriteria
+        winnerCriteria
+        allowAbstention
+        computeResultsAgainst
+      }
+      eligibleVotersChainId
+      type
+    }
+    admin {
+      voteInitiator
+      signingKey
+      signature
+      adminEntryHash
+      blockHeight
+      registered
+      voteInfo {
+        externalRef
+        title
+      	text
+      }
+    }
+  }
+}
+
+
+# Schema for getting all votes:
+{
+	allProposals(registered:true, active:true, limit:1, offset:1){
+    listInfo
+    voteList {
+      voteChainId
+    }
+  }
+}
+
+
+# Voter List
+{
+	eligibleVoters(chain:"84444341e0e60a496f75c98c57357805ec86e9f8e232348f1e60704e83bca2b0") {
+    listInfo
+    voters
+    }
+}
+
+# Eligible List
+{
+    eligibleList(chain:"d4b3c2044394664b56d49da17aa0d1fecc921012b6653889b9051ed3b6974696")
+}

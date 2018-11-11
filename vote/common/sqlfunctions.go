@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"strings"
 )
 
@@ -18,7 +19,7 @@ func (v *Vote) InsertFunction() string {
 }
 
 func (v *Vote) ScanRow(row SQLRowWithScan) (*Vote, error) {
-	var vi, sigKey, sig, hash, egchain, options, chain, entry string
+	var vi, sigKey, sig, hash, egchain, options, chain, entry, acceptCriteria, winnerCriteria string
 
 	err := row.Scan(
 		&vi,
@@ -40,6 +41,8 @@ func (v *Vote) ScanRow(row SQLRowWithScan) (*Vote, error) {
 		&v.Proposal.Vote.Config.ComputeResultsAgainst,
 		&v.Proposal.Vote.Config.MinOptions,
 		&v.Proposal.Vote.Config.MaxOptions,
+		&acceptCriteria,
+		&winnerCriteria,
 		&chain,
 		&entry,
 		&v.Proposal.BlockHeight,
@@ -70,6 +73,8 @@ func (v Vote) SelectRows() string {
 			vote_compute_results_against,
 			vote_min_options,
 			vote_max_options,
+			vote_accept_criteria,
+			vote_winner_criteria,
 			chain_id,
 			entry_hash,
 			block_height`
@@ -77,7 +82,9 @@ func (v Vote) SelectRows() string {
 
 func (v *Vote) RowValuePointers() []interface{} {
 	data, _ := v.Proposal.InitiatorSignature.MarshalBinary()
-	vi, sigKey, sig, exrefHash, egchain, options, chain, eHash :=
+	ac, _ := json.Marshal(v.Proposal.Vote.Config.AcceptanceCriteria)
+	wc, _ := json.Marshal(v.Proposal.Vote.Config.WinnerCriteria)
+	vi, sigKey, sig, exrefHash, egchain, options, chain, eHash, acceptCriteria, winnerCriteria :=
 		v.Proposal.VoteInitiator.String(), // Vote Initiator
 		v.Proposal.InitiatorKey.String(), // SigKey
 		hex.EncodeToString(data), // Signature
@@ -85,7 +92,9 @@ func (v *Vote) RowValuePointers() []interface{} {
 		v.Proposal.Vote.EligibleVotersChainID.String(), // Eligible Voter Chain
 		strings.Join(v.Proposal.Vote.Config.Options, ","), // Vote Options
 		v.Proposal.ProposalChain.String(),
-		v.Proposal.EntryHash.String()
+		v.Proposal.EntryHash.String(),
+		string(ac),
+		string(wc)
 
 	return []interface{}{
 		&vi,
@@ -107,6 +116,8 @@ func (v *Vote) RowValuePointers() []interface{} {
 		&v.Proposal.Vote.Config.ComputeResultsAgainst,
 		&v.Proposal.Vote.Config.MinOptions,
 		&v.Proposal.Vote.Config.MaxOptions,
+		&acceptCriteria,
+		&winnerCriteria,
 		&chain,
 		&eHash,
 		&v.Proposal.BlockHeight}

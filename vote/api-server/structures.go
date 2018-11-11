@@ -1,0 +1,322 @@
+package apiserver
+
+import (
+	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/language/ast"
+	"github.com/graphql-go/graphql/language/kinds"
+)
+
+type ListInfo struct {
+	TotalCount int `json:"totalCount"`
+	Offset     int `json:"offset""`
+	Limit      int `json:"limit"`
+}
+
+type VoteList struct {
+	Info  ListInfo `json:"listInfo"`
+	Votes []Vote   `json:"voteList"`
+}
+
+var VoteListGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "VoteList",
+	Description: "A list of votes",
+	Fields: graphql.Fields{
+		"listInfo": &graphql.Field{
+			Type: JSON,
+		},
+		"voteList": &graphql.Field{
+			Type: graphql.NewList(VoteGraphQLType),
+		},
+	}})
+
+type Vote struct {
+	Chainid    string         `json:"voteChainId"`
+	Admin      VoteAdmin      `json:"admin"`
+	Definition VoteDefinition `json:"definition"`
+	Results    VoteResult     `json:"result"`
+}
+
+var VoteGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "Vote",
+	Description: "The full vote data structure.",
+	Fields: graphql.Fields{
+		"voteChainId": &graphql.Field{
+			Type: graphql.String,
+		},
+		"definition": &graphql.Field{
+			Type: VoteDefinitionGraphQLType,
+		},
+		"admin": &graphql.Field{
+			Type: VoteAdminGraphQLType,
+		},
+	}})
+
+type VoteAdmin struct {
+	// Related to Security
+	VoteInitator     string `json:"voteInitiator"`
+	SigningKey       string `json:"signingKey"`
+	Signature        string `json:"signature"`
+	AdminEntryHash   string `json:"adminEntryHash"`
+	AdminBlockHeight int    `json:"blockHeight"`
+	Registered       bool   `json:"registered"`
+
+	// Other
+	VoteInfo struct {
+		Title       string `json:"title"`
+		Text        string `json:"text"`
+		ExternalRef struct {
+			Href string `json:"href"`
+			Hash struct {
+				Value string `json:"value"`
+				Algo  string `json:"algo"`
+			} `json:"hash"`
+		} `json:"externalRef"`
+	} `json:"voteInfo"` // Title, description, etc
+}
+
+type VoteDefinition struct {
+	PhasesBlockHeights struct {
+		CommitStart int `json:"commitStart"`
+		CommitStop  int `json:"commitStop"`
+		RevealStart int `json:"revealStart"`
+		RevealStop  int `json:"reavealStop"`
+	} `json:"phasesBlockHeights"`
+	VoteType int `json:"type"`
+	Config   struct {
+		Options               []string `json:"options"`
+		MinOptions            int      `json:"minOptions"`
+		MaxOptions            int      `json:"maxOptions"`
+		AcceptanceCriteria    string   `json:"acceptanceCriteria"`
+		WinnerCriteria        string   `json:"winnerCriteria"`
+		AllowAbstention       bool     `json:"allowAbstention"`
+		ComputeResultsAgainst string   `json:"computeResultsAgainst"`
+	} `json:"config"`
+	EligibleVoterChain string `json:"eligibleVotersChainId"`
+}
+
+var VoteAdminGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "VoteAdmin",
+	Description: "",
+	Fields: graphql.Fields{
+		"voteInitiator": &graphql.Field{
+			Type: graphql.String,
+		},
+		"signingKey": &graphql.Field{
+			Type: graphql.String,
+		},
+		"signature": &graphql.Field{
+			Type: graphql.String,
+		},
+		"adminEntryHash": &graphql.Field{
+			Type: graphql.String,
+		},
+		"blockHeight": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"registered": &graphql.Field{
+			Type: graphql.Boolean,
+		},
+		"voteInfo": &graphql.Field{
+			Type: VAVoteInfoGraphQLType,
+		},
+	}})
+
+var VAVoteInfoGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "VoteInfo",
+	Description: "",
+	Fields: graphql.Fields{
+		"title": &graphql.Field{
+			Type: graphql.String,
+		},
+		"text": &graphql.Field{
+			Type: graphql.String,
+		},
+		"externalRef": &graphql.Field{
+			Type: JSON,
+		},
+	}})
+
+var VoteDefinitionGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "VoteDefinition",
+	Description: "The vote definition",
+	Fields: graphql.Fields{
+		"phasesBlockHeights": &graphql.Field{
+			Type: JSON,
+		},
+		"type": &graphql.Field{
+			Type: graphql.String,
+		},
+		"config": &graphql.Field{
+			Type: VDConfigGraphQLType,
+		},
+		"eligibleVotersChainId": &graphql.Field{
+			Type: graphql.String,
+		},
+	}})
+
+//var VDPhasesBlockHeightsGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+//	Name:        "PhasesBlockHeights",
+//	Description: "",
+//	Fields: graphql.Fields{
+//		"commitStart": &graphql.Field{
+//			Type: graphql.Int,
+//		},
+//		"commitStop": &graphql.Field{
+//			Type: graphql.Int,
+//		},
+//		"revealStart": &graphql.Field{
+//			Type: graphql.Int,
+//		},
+//		"revealStop": &graphql.Field{
+//			Type: graphql.Int,
+//		},
+//	}})
+
+var VDConfigGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "VoteDefinitionConfig",
+	Description: "",
+	Fields: graphql.Fields{
+		"options": &graphql.Field{
+			Type: graphql.NewList(graphql.String),
+		},
+		"minOptions": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"maxOptions": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"acceptanceCriteria": &graphql.Field{
+			Type: JSON,
+		},
+		"winnerCriteria": &graphql.Field{
+			Type: JSON,
+		},
+		"allowAbstention": &graphql.Field{
+			Type: graphql.Boolean,
+		},
+		"computeResultsAgainst": &graphql.Field{
+			Type: graphql.String,
+		},
+	}})
+
+/*
+ *
+ * Vote Result
+ *
+ */
+
+type VoteResult struct {
+}
+
+/*
+ *
+ * Eligible List
+ *
+ */
+
+type EligibleList struct {
+	Admin struct {
+		ChainID    string `json:"chainId"`
+		Initiator  string `json:"initiator"`
+		Nonce      string `json:"nonce"`
+		SigningKey string `json:"signingKey"`
+		Signature  string `json:"signature"`
+	} `json:"admin"`
+}
+
+type EligibleVoterContainer struct {
+	EligibleVoters []EligibleVoter `json:"voters"`
+	Info           ListInfo        `json:"listInfo"`
+}
+
+type EligibleVoter struct {
+	// Given by Entry
+	VoterID    string `json:"voterId"`
+	VoteWeight int    `json:"weight"`
+
+	// Given by entry context
+	BlockHeight  int    `json:"blockHeight"`
+	EligibleList string `json:"eligibleList"`
+	EntryHash    string `json:"entryHash"`
+
+	// Given by factom-walletd
+	SigningKeys []string `json:"keys"`
+}
+
+var ELContainerGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "EligbleList",
+	Fields: graphql.Fields{
+		"listInfo": &graphql.Field{
+			Type: JSON,
+		},
+		"voters": &graphql.Field{
+			Description: "TODO: Should allow this to be broken up",
+			Type:        graphql.NewList(JSON),
+		},
+	}})
+
+var ELAdminGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "EligbleListAdmin",
+	Fields: graphql.Fields{
+		"chainId": &graphql.Field{
+			Type: graphql.String,
+		},
+		"initiator": &graphql.Field{
+			Type: graphql.String,
+		},
+		"nonce": &graphql.Field{
+			Type: graphql.String,
+		},
+		"signingKey": &graphql.Field{
+			Type: graphql.String,
+		},
+		"signature": &graphql.Field{
+			Type: graphql.String,
+		},
+	}})
+
+//
+
+// JSON json type
+var JSON = graphql.NewScalar(
+	graphql.ScalarConfig{
+		Name:        "JSON",
+		Description: "The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf)",
+		Serialize: func(value interface{}) interface{} {
+			return value
+		},
+		ParseValue: func(value interface{}) interface{} {
+			return value
+		},
+		ParseLiteral: parseLiteral,
+	},
+)
+
+func parseLiteral(astValue ast.Value) interface{} {
+	kind := astValue.GetKind()
+
+	switch kind {
+	case kinds.StringValue:
+		return astValue.GetValue()
+	case kinds.BooleanValue:
+		return astValue.GetValue()
+	case kinds.IntValue:
+		return astValue.GetValue()
+	case kinds.FloatValue:
+		return astValue.GetValue()
+	case kinds.ObjectValue:
+		obj := make(map[string]interface{})
+		for _, v := range astValue.GetValue().([]*ast.ObjectField) {
+			obj[v.Name.Value] = parseLiteral(v.Value)
+		}
+		return obj
+	case kinds.ListValue:
+		list := make([]interface{}, 0)
+		for _, v := range astValue.GetValue().([]ast.Value) {
+			list = append(list, parseLiteral(v))
+		}
+		return list
+	default:
+		return nil
+	}
+}

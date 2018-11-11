@@ -95,14 +95,15 @@ type VoteContent struct {
 		AllowAbstention bool `json:"allowAbstention"`
 		// ComputeResultsAgainst (ALL_ELIGIBLE_VOTERS or PARTICIPANTS_ONLY) specifying the mode of
 		// computation of the results
-		ComputeResultsAgainst string                   `json:"computeResultsAgainst"`
-		MinOptions            int                      `json:"minOptions"`         // min number of options the voter must select,
-		MaxOptions            int                      `json:"maxOptions"`         // max number of options the voter can select,
-		AcceptanceCriteria    AcceptanceCriteriaStruct `json:"acceptanceCriteria"` // (optional) list of terms for accepting the vot
+		ComputeResultsAgainst string         `json:"computeResultsAgainst"`
+		MinOptions            int            `json:"minOptions"`         // min number of options the voter must select,
+		MaxOptions            int            `json:"maxOptions"`         // max number of options the voter can select,
+		AcceptanceCriteria    CriteriaStruct `json:"acceptanceCriteria"` // (optional) list of terms for accepting the vot
+		WinnerCriteria        CriteriaStruct `json:"winnerCriteria"`
 	} `json:"config"`
 }
 
-type AcceptanceCriteriaStruct struct {
+type CriteriaStruct struct {
 	// The strings in the map are the options. "OptionA", etc
 	MinSupport map[string]struct {
 		Weighted   float64 `json:"weighted"`
