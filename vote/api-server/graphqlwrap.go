@@ -21,6 +21,8 @@ var voterow = "vote_initiator, signing_key, signature, title, description, exter
 
 var eligibleListRow = "chain_id, vote_initiator, nonce, initiator_key, initiator_signature"
 var eligibleVoterRow = "voter_id, eligible_list, weight, entry_hash, block_height, signing_keys"
+var commitRow = `voter_id, vote_chain, signing_key, signature, commitment, entry_hash, block_height`
+var revealRow = `voter_id, vote_chain, vote, secret, hmac_algo, entry_hash, block_height`
 
 func (g *GraphQLSQLDB) FetchVote(chainid string) (*Vote, error) {
 	query := fmt.Sprintf(`SELECT %s FROM proposals WHERE chain_id = $1`, voterow)
@@ -221,5 +223,163 @@ func scanVote(rows *sql.Rows, v *Vote, extra []interface{}) error {
 		arr...,
 	)
 	v.Definition.Config.Options = strings.Split(options, ",")
+	return err
+}
+
+func (g *GraphQLSQLDB) FetchAllCommits(chainid string, limit, offset int) (*VoteCommitContainer, error) {
+	query := fmt.Sprintf(`SELECT %s, count(*) OVER() AS full_count FROM commits WHERE vote_chain = $1`, commitRow)
+
+	if offset > 0 {
+		query += fmt.Sprintf(" OFFSET %d", offset)
+	}
+
+	if limit > 0 {
+		query += fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	rows, err := g.SQLDatabase.DB.Query(query, chainid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var commits []VoteCommit
+	count := new(int)
+	for rows.Next() {
+		v := new(VoteCommit)
+		err = scanCommit(rows, v, []interface{}{count})
+
+		if err != nil {
+			return nil, err
+		}
+		commits = append(commits, *v)
+	}
+
+	container := new(VoteCommitContainer)
+	container.Commits = commits
+	container.Info.TotalCount = *count
+	container.Info.Offset = offset
+	container.Info.Limit = limit
+
+	return container, nil
+}
+
+func (g *GraphQLSQLDB) FetchCommit(voterID, voteChain string) (*VoteCommit, error) {
+	query := fmt.Sprintf(`SELECT %s FROM commits WHERE voter_id = $1 AND vote_chain = $2`, commitRow)
+	rows, err := g.SQLDatabase.DB.Query(query, voterID, voteChain)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return nil, fmt.Errorf("list not found")
+	}
+
+	c := new(VoteCommit)
+	err = scanCommit(rows, c, noextra)
+
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func scanCommit(rows *sql.Rows, c *VoteCommit, extra []interface{}) error {
+	var arr = []interface{}{
+		&c.VoterID,
+		&c.VoteChain,
+		&c.SigningKey,
+		&c.Signature,
+		&c.Commitment,
+		&c.EntryHash,
+		&c.BlockHeight,
+	}
+
+	arr = append(arr, extra...)
+	err := rows.Scan(
+		arr...,
+	)
+	return err
+}
+
+func (g *GraphQLSQLDB) FetchAllReveals(chainid string, limit, offset int) (*VoteRevealContainer, error) {
+	query := fmt.Sprintf(`SELECT %s, count(*) OVER() AS full_count FROM reveals WHERE vote_chain = $1`, revealRow)
+
+	if offset > 0 {
+		query += fmt.Sprintf(" OFFSET %d", offset)
+	}
+
+	if limit > 0 {
+		query += fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	rows, err := g.SQLDatabase.DB.Query(query, chainid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var reveals []VoteReveal
+	count := new(int)
+	for rows.Next() {
+		v := new(VoteReveal)
+		err = scanReveal(rows, v, []interface{}{count})
+
+		if err != nil {
+			return nil, err
+		}
+		reveals = append(reveals, *v)
+	}
+
+	container := new(VoteRevealContainer)
+	container.Reveals = reveals
+	container.Info.TotalCount = *count
+	container.Info.Offset = offset
+	container.Info.Limit = limit
+
+	return container, nil
+}
+
+func (g *GraphQLSQLDB) FetchReveal(voterID, voteChain string) (*VoteReveal, error) {
+	query := fmt.Sprintf(`SELECT %s FROM reveals WHERE voter_id = $1 AND vote_chain = $2`, revealRow)
+	rows, err := g.SQLDatabase.DB.Query(query, voterID, voteChain)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return nil, fmt.Errorf("list not found")
+	}
+
+	r := new(VoteReveal)
+	err = scanReveal(rows, r, noextra)
+
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+func scanReveal(rows *sql.Rows, r *VoteReveal, extra []interface{}) error {
+	var vote string
+	var arr = []interface{}{
+		&r.VoterID,
+		&r.VoteChain,
+		&vote,
+		&r.Secret,
+		&r.HmacAlgo,
+		&r.EntryHash,
+		&r.BlockHeight,
+	}
+
+	arr = append(arr, extra...)
+	err := rows.Scan(
+		arr...,
+	)
+
+	r.Vote = strings.Split(vote, ",")
+
 	return err
 }

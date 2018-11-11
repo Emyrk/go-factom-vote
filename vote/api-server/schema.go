@@ -14,6 +14,10 @@ func (s *GraphQLServer) CreateSchema() (graphql.Schema, error) {
 		"allProposals":   s.allProposals(),
 		"eligibleList":   s.eligibleList(),
 		"eligibleVoters": s.eligibleListVoters(),
+		"commit":         s.commit(),
+		"reveal":         s.reveal(),
+		"commits":        s.commits(),
+		"reveals":        s.reveals(),
 	}
 
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
@@ -46,6 +50,94 @@ func (s *GraphQLServer) proposal() *graphql.Field {
 		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 			chain := params.Args["chain"].(string)
 			return s.SQLDB.FetchVote(chain)
+		},
+	}
+}
+
+func (s *GraphQLServer) commits() *graphql.Field {
+	return &graphql.Field{
+		Type: CommitListGraphQLType,
+		Args: graphql.FieldConfigArgument{
+			"offset": &graphql.ArgumentConfig{
+				Type: graphql.Int,
+			},
+			"limit": &graphql.ArgumentConfig{
+				Type: graphql.Int,
+			},
+			"voteChain": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+		},
+		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+			offset, _ := params.Args["offset"].(int)
+			limit, _ := params.Args["limit"].(int)
+			voterChain, _ := params.Args["voteChain"].(string)
+
+			return s.SQLDB.FetchAllCommits(voterChain, limit, offset)
+		},
+	}
+}
+
+func (s *GraphQLServer) commit() *graphql.Field {
+	return &graphql.Field{
+		Type: VoteCommitGraphQLType,
+		Args: graphql.FieldConfigArgument{
+			"voterId": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"voteChain": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+		},
+		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+			voterId, _ := params.Args["voterId"].(string)
+			voterChain, _ := params.Args["voteChain"].(string)
+
+			return s.SQLDB.FetchCommit(voterId, voterChain)
+		},
+	}
+}
+
+func (s *GraphQLServer) reveal() *graphql.Field {
+	return &graphql.Field{
+		Type: VoteRevealGraphQLType,
+		Args: graphql.FieldConfigArgument{
+			"voterId": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"voteChain": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+		},
+		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+			voterId, _ := params.Args["voterId"].(string)
+			voterChain, _ := params.Args["voteChain"].(string)
+
+			return s.SQLDB.FetchReveal(voterId, voterChain)
+		},
+	}
+}
+
+func (s *GraphQLServer) reveals() *graphql.Field {
+	return &graphql.Field{
+		Type: RevealListGraphQLType,
+		Args: graphql.FieldConfigArgument{
+			"offset": &graphql.ArgumentConfig{
+				Type: graphql.Int,
+			},
+			"limit": &graphql.ArgumentConfig{
+				Type: graphql.Int,
+			},
+			"voteChain": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+		},
+		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+			offset, _ := params.Args["offset"].(int)
+			limit, _ := params.Args["limit"].(int)
+			voterChain, _ := params.Args["voteChain"].(string)
+
+			return s.SQLDB.FetchAllReveals(voterChain, limit, offset)
 		},
 	}
 }

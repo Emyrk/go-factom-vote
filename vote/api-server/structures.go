@@ -210,6 +210,118 @@ type VoteResult struct {
 
 /*
  *
+ * Commit/Reveal
+ *
+ */
+
+type VoteCommitContainer struct {
+	Commits []VoteCommit `json:"commits"`
+	Info    ListInfo     `json:"listInfo"`
+}
+
+var CommitListGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "CommitList",
+	Description: "A list of commits",
+	Fields: graphql.Fields{
+		"listInfo": &graphql.Field{
+			Type: JSON,
+		},
+		"commits": &graphql.Field{
+			Type: graphql.NewList(VoteCommitGraphQLType),
+		},
+	}})
+
+type VoteCommit struct {
+	VoterID     string `json:"voterId"`
+	VoteChain   string `json:"voteChain"`
+	SigningKey  string `json:"signingKey"`
+	Signature   string `json:"signature"`
+	Commitment  string `json:"commitment"`
+	EntryHash   string `json:"entryhash"`
+	BlockHeight int    `json:"blockHeight"`
+}
+
+var VoteCommitGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "VoteCommit",
+	Fields: graphql.Fields{
+		"voterId": &graphql.Field{
+			Type: graphql.String,
+		},
+		"voteChain": &graphql.Field{
+			Type: graphql.String,
+		},
+		"signingKey": &graphql.Field{
+			Type: graphql.String,
+		},
+		"signature": &graphql.Field{
+			Type: graphql.String,
+		},
+		"commitment": &graphql.Field{
+			Type: graphql.String,
+		},
+		"entryhash": &graphql.Field{
+			Type: graphql.String,
+		},
+		"blockHeight": &graphql.Field{
+			Type: graphql.Int,
+		},
+	}})
+
+type VoteRevealContainer struct {
+	Reveals []VoteReveal `json:"reveals"`
+	Info    ListInfo     `json:"listInfo"`
+}
+
+var RevealListGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "RevealList",
+	Description: "A list of reveals",
+	Fields: graphql.Fields{
+		"listInfo": &graphql.Field{
+			Type: JSON,
+		},
+		"reveals": &graphql.Field{
+			Type: graphql.NewList(VoteRevealGraphQLType),
+		},
+	}})
+
+type VoteReveal struct {
+	VoterID     string   `json:"voterId"`
+	VoteChain   string   `json:"voteChain"`
+	Vote        []string `json:"vote"`
+	Secret      string   `json:"secret"`
+	HmacAlgo    string   `json:"hmacAlgo"`
+	EntryHash   string   `json:"entryhash"`
+	BlockHeight int      `json:"blockHeight"`
+}
+
+var VoteRevealGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "VoteReveal",
+	Fields: graphql.Fields{
+		"voterId": &graphql.Field{
+			Type: graphql.String,
+		},
+		"voteChain": &graphql.Field{
+			Type: graphql.String,
+		},
+		"vote": &graphql.Field{
+			Type: graphql.NewList(graphql.String),
+		},
+		"secret": &graphql.Field{
+			Type: graphql.String,
+		},
+		"hmacAlgo": &graphql.Field{
+			Type: graphql.String,
+		},
+		"entryhash": &graphql.Field{
+			Type: graphql.String,
+		},
+		"blockHeight": &graphql.Field{
+			Type: graphql.Int,
+		},
+	}})
+
+/*
+ *
  * Eligible List
  *
  */
