@@ -2,5 +2,4 @@ FROM factominc/factomd:v5.1.0-alpine
 
 COPY factomd.conf /root/.factom/m2/factomd.conf
 
-ENTRYPOINT /go/bin/factomd -faulttimeout=120 -network=$NETWORK -customnet=$CUSTOMNET -pshost=tfa-explorer-mist
-#ENTRYPOINT ["/go/bin/factomd", "-faulttimeout=120" , "-pshost=tfa-explorer-mist"]
+ENTRYPOINT /go/bin/factomd -faulttimeout=120 -network=$NETWORK -customnet=$CUSTOMNET

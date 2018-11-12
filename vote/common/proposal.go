@@ -98,7 +98,7 @@ type VoteContent struct {
 		ComputeResultsAgainst string         `json:"computeResultsAgainst"`
 		MinOptions            int            `json:"minOptions"`         // min number of options the voter must select,
 		MaxOptions            int            `json:"maxOptions"`         // max number of options the voter can select,
-		AcceptanceCriteria    CriteriaStruct `json:"acceptanceCriteria"` // (optional) list of terms for accepting the vot
+		AcceptanceCriteria    CriteriaStruct `json:"acceptanceCriteria"` // (optional) list of terms for accepting the vote
 		WinnerCriteria        CriteriaStruct `json:"winnerCriteria"`
 	} `json:"config"`
 }
@@ -108,11 +108,11 @@ type CriteriaStruct struct {
 	MinSupport map[string]struct {
 		Weighted   float64 `json:"weighted"`
 		Unweighted float64 `json:"unweighted"`
-	} `json:"minSupport"`
+	} `json:"minSupport, omitempty"`
 	MinTurnout struct {
 		Weighted   float64 `json:"weighted"`
 		Unweighted float64 `json:"unweighted"`
-	} `json:"minTurnout"`
+	} `json:"minTurnout, omitempty"`
 }
 
 // IsDataValid runs a check on the data to check if it's valid against the rules

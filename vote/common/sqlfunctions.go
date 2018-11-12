@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"strings"
+
+	"github.com/FactomProject/factomd/common/primitives"
 )
 
 func (v *Vote) New() ISQLObject {
@@ -28,7 +30,7 @@ func (v *Vote) ScanRow(row SQLRowWithScan) (*Vote, error) {
 		&v.Proposal.Proposal.Title,
 		&v.Proposal.Proposal.Text,
 		&v.Proposal.Proposal.ExternalRef.Href,
-		&hash,
+		&hash, // External Hash
 		&v.Proposal.Proposal.ExternalRef.Hash.Algo,
 		&v.Proposal.Vote.PhasesBlockHeights.CommitStart,
 		&v.Proposal.Vote.PhasesBlockHeights.CommitEnd,
@@ -50,6 +52,32 @@ func (v *Vote) ScanRow(row SQLRowWithScan) (*Vote, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Populate all the fields that have to be converted
+	v.Proposal.VoteInitiator, _ = primitives.HexToHash(vi)
+
+	key, _ := hex.DecodeString(sigKey)
+	copy(v.Proposal.InitiatorKey[:], key[:])
+
+	sigBytes, _ := hex.DecodeString(sig)
+	v.Proposal.InitiatorSignature.SetSignature(sigBytes)
+
+	hashBytes, _ := hex.DecodeString(hash)
+	v.Proposal.Proposal.ExternalRef.Hash.Value.SetBytes(hashBytes)
+
+	egChainBytes, _ := hex.DecodeString(egchain)
+	v.Proposal.Vote.EligibleVotersChainID.SetBytes(egChainBytes)
+
+	v.Proposal.Vote.Config.Options = strings.Split(options, ",")
+
+	json.Unmarshal([]byte(acceptCriteria), &v.Proposal.Vote.Config.AcceptanceCriteria)
+	json.Unmarshal([]byte(winnerCriteria), &v.Proposal.Vote.Config.WinnerCriteria)
+
+	v.Proposal.ProposalChain, _ = primitives.HexToHash(chain)
+
+	entryHashBytes, _ := hex.DecodeString(entry)
+	v.Proposal.EntryHash.SetBytes(entryHashBytes)
+
 	return v, nil
 }
 

@@ -34,19 +34,16 @@ services:
       - factomd.env
 
 
-  factom-walletd:
-    container_name: voting-factom-walletd
+  scraper:
+    container_name: voting-scraper
     build:
        context: .
-       dockerfile: Dockerfile.wallet
+       dockerfile: Dockerfile.scraper
     networks:
         - vote_app
-#    depends_on:
-#        - postgres_db
-    ports:
-        - "8089:8089"
-    volumes:
-      - vote_walletd_volume:/root/.factom/
+    depends_on:
+        - db
+        - factomd
     env_file:
       - factomd.env
 

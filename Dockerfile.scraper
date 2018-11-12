@@ -1,0 +1,30 @@
+FROM golang:1.10
+
+# Get git
+RUN apt-get update \
+    && apt-get -y install curl git \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Get glide
+RUN go get github.com/Masterminds/glide
+
+# Where factomd sources will live
+WORKDIR $GOPATH/src/github.com/Emyrk/go-factom-vote
+
+# Get the dependencies
+COPY ./glide.yaml ./glide.lock ./
+COPY vendor ./
+
+# Install dependencies
+# RUN glide install -v
+
+# Populate the rest of the source
+COPY . .
+
+ARG GOOS=linux
+
+WORKDIR $GOPATH/src/github.com/Emyrk/go-factom-vote/scraper/scraperd
+# Build and install factomd
+RUN go install
+
+ENTRYPOINT ["/go/bin/scraperd", "-fhost=voting-factomd", "-phost=oting-postgres-db"]

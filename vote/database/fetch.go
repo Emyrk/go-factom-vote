@@ -36,6 +36,7 @@ func (s *SQLDatabase) IsEligibleListExistWithKey(chainId string) (bool, string, 
 	if err != nil {
 		return false, "", err
 	}
+	defer rows.Close()
 
 	if rows.Next() {
 		var chain, key string
@@ -53,6 +54,7 @@ func exists(rows *sql.Rows, err error) (bool, error) {
 	if !rows.Next() {
 		return false, nil
 	}
+	rows.Close()
 
 	if err == sql.ErrNoRows {
 		return false, nil
@@ -76,20 +78,25 @@ func (s *SQLDatabase) FetchCommitForReveal(reveal common.VoteReveal) (*PartialCo
 
 	query := `SELECT voter_id, signing_key, commitment, vote_chain FROM commits WHERE 
 				voter_id = $1 AND vote_chain = $2`
-	rows, err := s.DB.Query(query, reveal.VoterID.String(), reveal.VoteChain.String())
-	if err != nil {
-		return nil, err
-	}
-
-	// Should only be 1 row
-	if !rows.Next() {
-		return nil, fmt.Errorf("no commit found")
-	}
-
-	err = rows.Scan(&pc.VoterID, &pc.SigningKey, &pc.Commitment, &pc.VoteChain)
+	row := s.DB.QueryRow(query, reveal.VoterID.String(), reveal.VoteChain.String())
+	err := row.Scan(&pc.VoterID, &pc.SigningKey, &pc.Commitment, &pc.VoteChain)
 	if err != nil {
 		return nil, err
 	}
 
 	return pc, nil
+}
+
+func (s *SQLDatabase) FetchVote(chainid string) (*common.Vote, error) {
+	v := new(common.Vote)
+	var err error
+
+	query := fmt.Sprintf("SELECT %s FROM %s WHERE chain_id = $1", v.SelectRows(), v.Table())
+	row := s.DB.QueryRow(query, chainid)
+	v, err = v.ScanRow(row)
+	if err != nil {
+		return nil, err
+	}
+
+	return v, nil
 }
