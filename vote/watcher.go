@@ -37,15 +37,29 @@ type VoteWatcher struct {
 	sync.RWMutex
 }
 
+func NewVoteWatcherWithDB(db *database.SQLDatabase) *VoteWatcher {
+	vw := newVoteWatcher()
+	vw.SQLDB = db
+
+	return vw
+}
+
 func NewVoteWatcher() *VoteWatcher {
 	var err error
-	vw := new(VoteWatcher)
-	vw.VoteProposals = make(map[[32]byte]*Vote)
-	vw.EligibleLists = make(map[[32]byte]*EligibleList)
+	vw := newVoteWatcher()
+
 	vw.SQLDB, err = database.InitLocalDB()
 	if err != nil {
 		panic(err)
 	}
+
+	return vw
+}
+
+func newVoteWatcher() *VoteWatcher {
+	vw := new(VoteWatcher)
+	vw.VoteProposals = make(map[[32]byte]*Vote)
+	vw.EligibleLists = make(map[[32]byte]*EligibleList)
 	vw.WalletdLocation = "localhost:8089"
 
 	return vw

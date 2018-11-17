@@ -4,12 +4,12 @@ services:
   db:
     container_name: voting-postgres-db
     build:
-      context: .
+      context: ./postgres_db
     restart: always
     environment:
       POSTGRES_PASSWORD: password
-#    networks:
-#      database:
+    networks:
+      vote_app:
     volumes:
       - vote_postgres_volume:/var/lib/postgresql/data
     ports:
@@ -22,7 +22,7 @@ services:
        context: .
        dockerfile: Dockerfile.factomd
     networks:
-        - vote_app
+      vote_app:
 #    depends_on:
 #        - postgres_db
     ports:
@@ -40,7 +40,20 @@ services:
        context: .
        dockerfile: Dockerfile.scraper
     networks:
-        - vote_app
+      vote_app:
+    depends_on:
+        - db
+        - factomd
+    env_file:
+      - factomd.env
+
+  apiserver:
+    container_name: voting-apiserver
+    build:
+       context: .
+       dockerfile: Dockerfile.apiserver
+    networks:
+      vote_app:
     depends_on:
         - db
         - factomd

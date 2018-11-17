@@ -16,3 +16,6 @@ import:
   - database/hybridDB
 - package: github.com/lib/pq
 - package: github.com/sirupsen/logrus
+- package: github.com/graphql-go/graphql
+- package: github.com/graphql-go/handler
+

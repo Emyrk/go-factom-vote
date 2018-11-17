@@ -6,9 +6,9 @@ type GraphQLServer struct {
 	SQLDB GraphQLSQLDB
 }
 
-func NewGraphQLServer() (*GraphQLServer, error) {
+func NewGraphQLServer(sqlConfig database.SqlConfig) (*GraphQLServer, error) {
 	s := new(GraphQLServer)
-	db, err := database.InitLocalDB()
+	db, err := database.InitDb(sqlConfig)
 	if err != nil {
 		return nil, err
 	}

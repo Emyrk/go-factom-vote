@@ -1,5 +1,5 @@
-hash: 483d8fb4ab7228b883256c75e1a13b0847af4cddeccceb2c53969aa2d7399d8d
-updated: 2018-10-28T19:14:05.636517959-04:00
+hash: 0838756f09d6f810bb3759298f5192408ffd194873655f24dbd6d70181898bec
+updated: 2018-11-16T21:13:04.704654318-05:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -85,6 +85,21 @@ imports:
   version: 130e6b02ab059e7b717a096f397c5b60111cae74
   subpackages:
   - proto
+- name: github.com/graphql-go/graphql
+  version: a7e15c0298411af18c694ca387e733acef287104
+  subpackages:
+  - gqlerrors
+  - language/ast
+  - language/kinds
+  - language/lexer
+  - language/location
+  - language/parser
+  - language/printer
+  - language/source
+  - language/typeInfo
+  - language/visitor
+- name: github.com/graphql-go/handler
+  version: 28550b403f666810d217c1890a1bfde8a3297494
 - name: github.com/lib/pq
   version: 88edab0803230a3898347e77b474f8c1820a1f20
   subpackages:

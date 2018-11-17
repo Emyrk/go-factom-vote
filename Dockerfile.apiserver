@@ -23,8 +23,8 @@ COPY . .
 
 ARG GOOS=linux
 
-WORKDIR $GOPATH/src/github.com/Emyrk/go-factom-vote/scraper/scraperd
+WORKDIR $GOPATH/src/github.com/Emyrk/go-factom-vote/vote/api-server/api-serverd
 # Build and install factomd
 RUN go install
 
-ENTRYPOINT ["/go/bin/scraperd", "-fhost=voting-factomd", "-phost=voting-postgres-db"]
+ENTRYPOINT ["/go/bin/api-serverd", "-phost=voting-postgres-db"]

@@ -34,7 +34,8 @@ create table proposals
 	entry_hash char(64),
 	block_height integer,
 	vote_accept_criteria varchar,
-	vote_winner_criteria varchar
+	vote_winner_criteria varchar,
+	complete boolean default false
 )
 ;
 
@@ -152,7 +153,7 @@ create table results
 	vote_chain char(64) not null
 		constraint results_pkey
 		primary key,
-	valid boolean,
+	valid_vote boolean,
 	complete_count double precision,
 	complete_weight double precision,
 	voted_count double precision,
@@ -419,6 +420,56 @@ BEGIN
 					 param_entry_hash,
 					 param_block_height,
 					 FALSE);
+		RETURN 1;
+	end if;
+	RETURN -1;
+END;
+$$
+;
+
+create function insert_results(param_vote_chain character, param_valid_vote boolean, param_complete_count double precision, param_complete_weight double precision, param_voted_count double precision, param_voted_weight integer, param_abstained_count double precision, param_abstained_weight double precision, param_turnout_unweighted double precision, param_turnout_weighted double precision, param_support_unweighted double precision, param_support_weighted double precision, param_option_stats character varying, param_winner_stats character varying) returns integer
+language plpgsql
+as $$
+DECLARE
+BEGIN
+
+	IF exists(SELECT vote_chain FROM results WHERE
+		results.vote_chain = param_vote_chain)
+	THEN
+		-- This is a repeat
+		RETURN 0;
+	ELSE
+		-- Insert data into table
+		INSERT INTO results(vote_chain,
+												valid_vote,
+												complete_count,
+												complete_weight,
+												voted_count,
+												voted_weight,
+												abstained_count,
+												abstained_weight,
+												turnout_unweighted,
+												turnout_weighted,
+												support_unweighted,
+												support_weighted,
+												option_stats,
+												winner_stats)
+		VALUES(param_vote_chain,
+			param_valid_vote,
+			param_complete_count,
+			param_complete_weight,
+			param_voted_count,
+			param_voted_weight,
+			param_abstained_count,
+			param_abstained_weight,
+			param_turnout_unweighted,
+			param_turnout_weighted,
+			param_support_unweighted,
+					 param_support_weighted,
+					 param_option_stats,
+					 param_winner_stats);
+
+		UPDATE proposals SET complete = True WHERE chain_id = param_vote_chain;
 		RETURN 1;
 	end if;
 	RETURN -1;

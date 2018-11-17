@@ -47,7 +47,7 @@ func NewScraper(host string, port int, config *database.SqlConfig) (*Scraper, er
 
 	s.WalletdLocation = "localhost:8089"
 
-	s.VoteControl = vote.NewVoteWatcher()
+	s.VoteControl = vote.NewVoteWatcherWithDB(s.Database)
 	// TODO: Sync Vote Control
 
 	return s, nil
