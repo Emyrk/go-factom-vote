@@ -7,6 +7,7 @@ import (
 
 	"database/sql"
 
+	"github.com/Emyrk/go-factom-vote/vote/common"
 	"github.com/Emyrk/go-factom-vote/vote/database"
 )
 
@@ -17,7 +18,7 @@ type GraphQLSQLDB struct {
 	*database.SQLDatabase
 }
 
-var voterow = "vote_initiator, signing_key, signature, title, description, external_href, external_hash, external_hash_algo, commit_start, commit_stop, reveal_start, reveal_stop, eligible_voter_chain, vote_type, vote_options, vote_allow_abstain, vote_compute_results_against, vote_min_options, vote_max_options, vote_accept_criteria, vote_winner_criteria, chain_id, entry_hash, block_height, registered"
+var voterow = "vote_initiator, signing_key, signature, title, description, external_href, external_hash, external_hash_algo, commit_start, commit_stop, reveal_start, reveal_stop, eligible_voter_chain, vote_type, vote_options, vote_allow_abstain, vote_compute_results_against, vote_min_options, vote_max_options, vote_accept_criteria, vote_winner_criteria, chain_id, entry_hash, block_height, registered, complete"
 
 var eligibleListRow = "chain_id, vote_initiator, nonce, initiator_key, initiator_signature"
 var eligibleVoterRow = "voter_id, eligible_list, weight, entry_hash, block_height, signing_keys"
@@ -43,6 +44,70 @@ func (g *GraphQLSQLDB) FetchVote(chainid string) (*Vote, error) {
 		return nil, err
 	}
 	return v, nil
+}
+
+func (g *GraphQLSQLDB) FetchAllVoteStats(valid bool, offset int, limit int) (*VoteResultList, error) {
+	r := new(common.VoteStats)
+	where := ""
+	var args []interface{}
+	if valid {
+		where = "WHERE valid_vote = $1 "
+		args = append(args, valid)
+	}
+	query := fmt.Sprintf("SELECT %s, count(*) OVER() AS full_count FROM results %s", r.SelectRows(), where)
+	if offset > 0 {
+		query += fmt.Sprintf(" OFFSET %d", offset)
+	}
+
+	if limit > 0 {
+		query += fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	rows, err := g.SQLDatabase.DB.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []common.VoteStats
+	count := new(int)
+	for rows.Next() {
+		v := new(common.VoteStats)
+		err = scanVoteResults(rows, v, []interface{}{count})
+
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, *v)
+	}
+
+	container := new(VoteResultList)
+	container.Votes = results
+	container.Info.TotalCount = *count
+	container.Info.Offset = offset
+	container.Info.Limit = limit
+
+	return container, nil
+}
+
+func (g *GraphQLSQLDB) FetchVoteStats(chainid string) (*common.VoteStats, error) {
+	r := new(common.VoteStats)
+	query := fmt.Sprintf(`SELECT %s FROM results WHERE vote_chain = $1`, r.SelectRows())
+	rows, err := g.SQLDatabase.DB.Query(query, chainid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return nil, fmt.Errorf("vote results not found")
+	}
+
+	r, err = r.ScanRow(rows)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
 func (g *GraphQLSQLDB) FetchEligibleList(chainid string) (*EligibleList, error) {
@@ -125,6 +190,16 @@ func scanEligibleVoter(rows *sql.Rows, v *EligibleVoter, extra []interface{}) er
 		arr...,
 	)
 	v.SigningKeys = strings.Split(keys, ",")
+	return err
+}
+
+func scanVoteResults(rows *sql.Rows, v *common.VoteStats, extra []interface{}) error {
+	var arr = v.RowValuePointers()
+
+	arr = append(arr, extra...)
+	err := rows.Scan(
+		arr...,
+	)
 	return err
 }
 
@@ -216,6 +291,7 @@ func scanVote(rows *sql.Rows, v *Vote, extra []interface{}) error {
 		&v.Admin.AdminEntryHash,
 		&v.Admin.AdminBlockHeight,
 		&v.Admin.Registered,
+		&v.Admin.Complete,
 	}
 
 	arr = append(arr, extra...)

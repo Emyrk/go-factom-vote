@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Emyrk/go-factom-vote/vote"
+	"github.com/Emyrk/go-factom-vote/vote/common"
 	"github.com/Emyrk/go-factom-vote/vote/database"
 	"github.com/FactomProject/factomd/common/interfaces"
 	log "github.com/sirupsen/logrus"
@@ -141,6 +142,13 @@ MainCatchupLoop:
 
 		s.VoteControl.ProcessOldEntries()
 
+		// Now we check if any votes are complete
+		err = s.computeResults(int(height))
+		if err != nil {
+			errorAndWait(hog.WithFields(log.Fields{"insert": "completed"}), err)
+			continue MainCatchupLoop
+		}
+
 		err = s.Database.InsertCompleted(int(next))
 		if err != nil {
 			errorAndWait(hog.WithFields(log.Fields{"insert": "completed"}), err)
@@ -150,6 +158,61 @@ MainCatchupLoop:
 		next++
 		changes = 0
 	}
+}
+
+func (s *Scraper) computeResults(dbheight int) error {
+	flog := scraperlog.WithFields(log.Fields{"func": "computeReslts", "height": dbheight})
+	votes, err := s.Database.FetchCompleteVotes(dbheight)
+	if err != nil {
+		return err
+	}
+
+	tx, err := s.Database.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, v := range votes {
+		// Grab voters, commits, and reveals
+		voters, err := s.Database.FetchEligibleVoters(v.Proposal.Vote.EligibleVotersChainID.String())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		commits, err := s.Database.FetchCommits(v.Proposal.ProposalChain.String())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		reveals, err := s.Database.FetchReveals(v.Proposal.ProposalChain.String())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		results, err := common.ComputeResult(v, voters, commits, reveals)
+		if err != nil {
+			flog.WithField("vote", v.Proposal.ProposalChain.String()).Error(err)
+		}
+
+		if results != nil {
+			err = s.Database.InsertGenericTX(results, tx)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return nil
 }
 
 func errorAndWait(logger *log.Entry, err error) {

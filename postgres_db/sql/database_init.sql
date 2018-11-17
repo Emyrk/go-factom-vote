@@ -30,10 +30,18 @@ create table proposals
 	chain_id char(64) not null
 		constraint proposals_chain_id_pk
 		primary key,
-	registered boolean,
+	registered boolean default false,
 	entry_hash char(64),
-	block_height integer
+	block_height integer,
+	vote_accept_criteria varchar,
+	vote_winner_criteria varchar
 )
+;
+
+comment on column proposals.vote_accept_criteria is 'Raw JSON'
+;
+
+comment on column proposals.vote_winner_criteria is 'Raw JSON'
 ;
 
 create table commits
@@ -53,6 +61,10 @@ create table commits
 
 create unique index commits_vote_index
 	on commits (voter_id, vote_chain)
+;
+
+create index commits_vote_chain_index
+	on commits (vote_chain)
 ;
 
 create table reveals
@@ -133,6 +145,34 @@ create table repeated_reveals
 	constraint repeated_reveals_vote_chain_voter_id_vote_pk
 	primary key (vote_chain, voter_id, vote)
 )
+;
+
+create table results
+(
+	vote_chain char(64) not null
+		constraint results_pkey
+		primary key,
+	valid boolean,
+	complete_count double precision,
+	complete_weight double precision,
+	voted_count double precision,
+	voted_weight integer,
+	abstained_count double precision,
+	abstained_weight double precision,
+	turnout_unweighted double precision,
+	turnout_weighted double precision,
+	support_unweighted double precision,
+	support_weighted double precision,
+	option_stats varchar,
+	winner_stats varchar
+)
+;
+
+create unique index results_vote_chain_uindex
+	on results (vote_chain)
+;
+
+comment on table results is 'result of vote when complete (passed reveal phase)'
 ;
 
 create function insert_commit(param_voter_id character, param_signing_key character, param_signature character varying, param_commitment character varying, param_vote_chain character, param_entry_hash character, param_block_height integer) returns integer
@@ -269,68 +309,6 @@ END;
 $$
 ;
 
-create function insert_vote(param_vote_initiator character, param_signing_key character, param_signature character varying, param_title character varying, param_description character varying, param_external_href character varying, param_external_hash character varying, param_external_hash_algo character varying, param_commit_start integer, param_commit_stop integer, param_reveal_start integer, param_reveal_stop integer, param_eligible_voter_chain character, param_vote_type integer, param_vote_options character varying, param_vote_allow_abstain boolean, param_vote_compute_results_against character varying, param_vote_min_options integer, param_vote_max_options integer, param_chain_id character, param_entry_hash character, param_block_height integer) returns integer
-language plpgsql
-as $$
-BEGIN
-
-	IF exists(SELECT chain_id FROM proposals WHERE proposals.chain_id = param_chain_id)
-	THEN
-		-- Data already exists in the table
-		RETURN 0;
-	ELSE
-		-- Insert data into table
-		INSERT INTO proposals(vote_initiator,
-													signing_key,
-													signature,
-													title,
-													description,
-													external_href,
-													external_hash,
-													external_hash_algo,
-													commit_start,
-													commit_stop,
-													reveal_start,
-													reveal_stop,
-													eligible_voter_chain,
-													vote_type,
-													vote_options,
-													vote_allow_abstain,
-													vote_compute_results_against,
-													vote_min_options,
-													vote_max_options,
-													chain_id,
-													entry_hash,
-													block_height)
-		VALUES(param_vote_initiator,
-			param_signing_key,
-			param_signature,
-			param_title,
-			param_description,
-			param_external_href,
-			param_external_hash,
-			param_external_hash_algo,
-			param_commit_start,
-			param_commit_stop,
-			param_reveal_start,
-			param_reveal_stop,
-			param_eligible_voter_chain,
-			param_vote_type,
-			param_vote_options,
-			param_vote_allow_abstain,
-			param_vote_compute_results_against,
-			param_vote_min_options,
-			param_vote_max_options,
-			param_chain_id,
-			param_entry_hash,
-					 param_block_height);
-		RETURN 1;
-	end if;
-	RETURN -1;
-END;
-$$
-;
-
 create function insert_reveal(param_voter_id character, param_vote character varying, param_secret character varying, param_hmac_algo character varying, param_vote_chain character, param_entry_hash character, param_block_height integer) returns integer
 language plpgsql
 as $$
@@ -373,6 +351,74 @@ BEGIN
 
 		INSERT INTO repeated_reveals(vote_chain, voter_id, vote, block_height, entry_hash)
 		VALUES (param_vote_chain, param_voter_id, param_vote, param_block_height, param_entry_hash);
+		RETURN 1;
+	end if;
+	RETURN -1;
+END;
+$$
+;
+
+create function insert_vote(param_vote_initiator character, param_signing_key character, param_signature character varying, param_title character varying, param_description character varying, param_external_href character varying, param_external_hash character varying, param_external_hash_algo character varying, param_commit_start integer, param_commit_stop integer, param_reveal_start integer, param_reveal_stop integer, param_eligible_voter_chain character, param_vote_type integer, param_vote_options character varying, param_vote_allow_abstain boolean, param_vote_compute_results_against character varying, param_vote_min_options integer, param_vote_max_options integer, param_vote_accept_criteria character varying, param_vote_winner_criteria character varying, param_chain_id character, param_entry_hash character, param_block_height integer) returns integer
+language plpgsql
+as $$
+BEGIN
+
+	IF exists(SELECT chain_id FROM proposals WHERE proposals.chain_id = param_chain_id)
+	THEN
+		-- Data already exists in the table
+		RETURN 0;
+	ELSE
+		-- Insert data into table
+		INSERT INTO proposals(vote_initiator,
+													signing_key,
+													signature,
+													title,
+													description,
+													external_href,
+													external_hash,
+													external_hash_algo,
+													commit_start,
+													commit_stop,
+													reveal_start,
+													reveal_stop,
+													eligible_voter_chain,
+													vote_type,
+													vote_options,
+													vote_allow_abstain,
+													vote_compute_results_against,
+													vote_min_options,
+													vote_max_options,
+													vote_accept_criteria,
+													vote_winner_criteria,
+													chain_id,
+													entry_hash,
+													block_height,
+													registered)
+		VALUES(param_vote_initiator,
+			param_signing_key,
+			param_signature,
+			param_title,
+			param_description,
+			param_external_href,
+			param_external_hash,
+			param_external_hash_algo,
+			param_commit_start,
+			param_commit_stop,
+			param_reveal_start,
+			param_reveal_stop,
+			param_eligible_voter_chain,
+			param_vote_type,
+			param_vote_options,
+			param_vote_allow_abstain,
+			param_vote_compute_results_against,
+			param_vote_min_options,
+			param_vote_max_options,
+			param_vote_accept_criteria,
+			param_vote_winner_criteria,
+					 param_chain_id,
+					 param_entry_hash,
+					 param_block_height,
+					 FALSE);
 		RETURN 1;
 	end if;
 	RETURN -1;

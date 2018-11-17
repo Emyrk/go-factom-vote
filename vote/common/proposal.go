@@ -27,6 +27,12 @@ type ProposalEntry struct {
 	EntryHash   primitives.Hash `json:"entry_hash"`
 }
 
+func NewEmptyProposalEntry() *ProposalEntry {
+	p := new(ProposalEntry)
+
+	return p
+}
+
 func NewProposalEntry(entry interfaces.IEBEntry, dbheight int) (*ProposalEntry, error) {
 	if len(entry.ExternalIDs()) != 5 {
 		return nil, fmt.Errorf("expected 5 external ids, found %d", len(entry.ExternalIDs()))
@@ -53,6 +59,8 @@ func NewProposalEntry(entry interfaces.IEBEntry, dbheight int) (*ProposalEntry, 
 	if !p.InitiatorSignature.Verify(signData) {
 		return nil, fmt.Errorf("Invalid signature on proposal")
 	}
+
+	fmt.Println(string(entry.GetContent()))
 
 	err = json.Unmarshal(entry.GetContent(), p)
 	if err != nil {
@@ -95,12 +103,23 @@ type VoteContent struct {
 		AllowAbstention bool `json:"allowAbstention"`
 		// ComputeResultsAgainst (ALL_ELIGIBLE_VOTERS or PARTICIPANTS_ONLY) specifying the mode of
 		// computation of the results
-		ComputeResultsAgainst string         `json:"computeResultsAgainst"`
-		MinOptions            int            `json:"minOptions"`         // min number of options the voter must select,
-		MaxOptions            int            `json:"maxOptions"`         // max number of options the voter can select,
-		AcceptanceCriteria    CriteriaStruct `json:"acceptanceCriteria"` // (optional) list of terms for accepting the vote
-		WinnerCriteria        CriteriaStruct `json:"winnerCriteria"`
+		ComputeResultsAgainst string               `json:"computeResultsAgainst"`
+		MinOptions            int                  `json:"minOptions"`         // min number of options the voter must select,
+		MaxOptions            int                  `json:"maxOptions"`         // max number of options the voter can select,
+		AcceptanceCriteria    AcceptCriteriaStruct `json:"acceptanceCriteria"` // (optional) list of terms for accepting the vote
+		WinnerCriteria        CriteriaStruct       `json:"winnerCriteria"`
 	} `json:"config"`
+}
+
+type AcceptCriteriaStruct struct {
+	MinSupport struct {
+		Weighted   float64 `json:"weighted"`
+		Unweighted float64 `json:"unweighted"`
+	} `json:"minSupport, omitempty"`
+	MinTurnout struct {
+		Weighted   float64 `json:"weighted"`
+		Unweighted float64 `json:"unweighted"`
+	} `json:"minTurnout, omitempty"`
 }
 
 type CriteriaStruct struct {

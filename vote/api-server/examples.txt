@@ -116,3 +116,38 @@
     }
   }
 }
+
+# 1 Result
+{
+    result(voteChain:"3061f736829af96b9fa03abbe5c121b5e308fc08d25b16f799ea675d1f6522db"){
+      chainId
+      valid
+      invalidReason
+      total
+      voted
+      abstain
+      options
+      turnout
+      support
+      weightedWinners
+    }
+}
+
+# All valid results
+{
+	results(valid:true){
+    listInfo
+    resultList{
+      chainId
+      valid
+      invalidReason
+      total
+      voted
+      abstain
+      options
+      turnout
+      support
+      weightedWinners
+    }
+  }
+}

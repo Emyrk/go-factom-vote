@@ -100,3 +100,97 @@ func (s *SQLDatabase) FetchVote(chainid string) (*common.Vote, error) {
 
 	return v, nil
 }
+
+func (s *SQLDatabase) FetchCompleteVotes(height int) ([]*common.Vote, error) {
+	v := new(common.Vote)
+	var err error
+	var votes []*common.Vote
+
+	query := fmt.Sprintf("SELECT %s FROM %s WHERE reveal_stop = $1", v.SelectRows(), v.Table())
+	rows, err := s.DB.Query(query, height)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		tmp := new(common.Vote)
+		v, err = tmp.ScanRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		votes = append(votes, tmp)
+	}
+
+	return votes, nil
+}
+
+func (s *SQLDatabase) FetchEligibleVoters(chainid string) ([]*common.EligibleVoter, error) {
+	v := new(common.EligibleVoter)
+	var err error
+
+	query := fmt.Sprintf("SELECT %s FROM %s WHERE eligible_list = $1", v.SelectRows(), v.Table())
+	rows, err := s.DB.Query(query, chainid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var arr []*common.EligibleVoter
+	for rows.Next() {
+		n := new(common.EligibleVoter)
+		n, err = n.ScanRow(rows)
+		if err == nil {
+			arr = append(arr, n)
+		}
+	}
+
+	return arr, nil
+}
+
+func (s *SQLDatabase) FetchCommits(chainid string) ([]*common.VoteCommit, error) {
+	v := new(common.VoteCommit)
+	var err error
+
+	query := fmt.Sprintf("SELECT %s FROM %s WHERE vote_chain = $1", v.SelectRows(), v.Table())
+	rows, err := s.DB.Query(query, chainid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var arr []*common.VoteCommit
+	for rows.Next() {
+		n := new(common.VoteCommit)
+		n, err = n.ScanRow(rows)
+		if err == nil {
+			arr = append(arr, n)
+		}
+	}
+
+	return arr, nil
+}
+
+func (s *SQLDatabase) FetchReveals(chainid string) ([]*common.VoteReveal, error) {
+	v := new(common.VoteReveal)
+	var err error
+
+	query := fmt.Sprintf("SELECT %s FROM %s WHERE vote_chain = $1", v.SelectRows(), v.Table())
+	rows, err := s.DB.Query(query, chainid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var arr []*common.VoteReveal
+	for rows.Next() {
+		n := new(common.VoteReveal)
+		n, err = n.ScanRow(rows)
+		if err == nil {
+			arr = append(arr, n)
+		}
+	}
+
+	return arr, nil
+}

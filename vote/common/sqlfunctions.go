@@ -22,6 +22,8 @@ func (v *Vote) InsertFunction() string {
 
 func (v *Vote) ScanRow(row SQLRowWithScan) (*Vote, error) {
 	var vi, sigKey, sig, hash, egchain, options, chain, entry, acceptCriteria, winnerCriteria string
+	v.Proposal = NewEmptyProposalEntry()
+	v.EligibleList = NewEligibleList()
 
 	err := row.Scan(
 		&vi,
@@ -181,7 +183,13 @@ func (v *VoteCommit) ScanRow(row SQLRowWithScan) (*VoteCommit, error) {
 		return nil, err
 	}
 
-	// TODO: Fill in
+	v.VoterID, _ = primitives.HexToHash(id)
+
+	sigBytes, _ := hex.DecodeString(sig)
+	v.Signature.UnmarshalBinary(sigBytes)
+
+	v.VoteChain, _ = primitives.HexToHash(chain)
+	v.EntryHash, _ = primitives.HexToHash(eHash)
 
 	return v, nil
 }
@@ -246,8 +254,11 @@ func (v *VoteReveal) ScanRow(row SQLRowWithScan) (*VoteReveal, error) {
 		return nil, err
 	}
 
-	// TODO: Fill in
 	v.Content.VoteOptions = strings.Split(vote, ",")
+
+	v.VoterID, _ = primitives.HexToHash(id)
+	v.VoteChain, _ = primitives.HexToHash(chain)
+	v.EntryHash, _ = primitives.HexToHash(eHash)
 
 	return v, nil
 }
@@ -353,7 +364,7 @@ func (v *EligibleVoter) InsertFunction() string {
 }
 
 func (v *EligibleVoter) ScanRow(row SQLRowWithScan) (*EligibleVoter, error) {
-	var id, list, ehash string
+	var id, list, ehash, keys string
 
 	err := row.Scan(
 		&id,
@@ -361,12 +372,22 @@ func (v *EligibleVoter) ScanRow(row SQLRowWithScan) (*EligibleVoter, error) {
 		&v.VoteWeight,
 		&ehash,
 		&v.BlockHeight,
+		&keys,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: Fill in
+	idBytes, _ := hex.DecodeString(id)
+	v.VoterID.SetBytes(idBytes)
+
+	listBytes, _ := hex.DecodeString(list)
+	v.EligibleList.SetBytes(listBytes)
+
+	entryBytes, _ := hex.DecodeString(ehash)
+	v.EntryHash.SetBytes(entryBytes)
+
+	v.SigningKeys = strings.Split(keys, ",")
 
 	return v, nil
 }
@@ -394,5 +415,88 @@ func (v *EligibleVoter) RowValuePointers() []interface{} {
 		&ehash,
 		&v.BlockHeight,
 		&keys,
+	}
+}
+
+// Results
+func (v *VoteStats) New() ISQLObject {
+	return NewVoteStats()
+}
+
+func (v *VoteStats) Table() string {
+	return "results"
+}
+
+func (v *VoteStats) InsertFunction() string {
+	return "insert_results"
+}
+
+func (v *VoteStats) ScanRow(row SQLRowWithScan) (*VoteStats, error) {
+	var optJson, winJosn string
+
+	err := row.Scan(
+		&v.VoteChain,
+		&v.Valid,
+		&v.CompleteStats.Count,
+		&v.CompleteStats.Weight,
+		&v.VotedStats.Count,
+		&v.VotedStats.Weight,
+		&v.AbstainedStats.Count,
+		&v.AbstainedStats.Weight,
+		&v.Turnout.UnweightedTurnout,
+		&v.Turnout.WeightedTurnout,
+		&v.Support.CountDenominator,
+		&v.Support.WeightDenominator,
+		&optJson,
+		&winJosn,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	json.Unmarshal([]byte(optJson), &v.OptionStats)
+	json.Unmarshal([]byte(winJosn), &v.WeightedWinners)
+
+	return v, nil
+}
+
+func (v VoteStats) SelectRows() string {
+	return `vote_chain,
+			valid_vote,
+			complete_count,
+			complete_weight,
+			voted_count,
+			voted_weight,
+			abstained_count,
+			abstained_weight,
+			turnout_unweighted,
+			turnout_weighted,
+			support_unweighted,
+			support_weighted,
+			option_stats,
+			winner_stats`
+}
+
+func (v *VoteStats) RowValuePointers() []interface{} {
+	optBytes, _ := json.Marshal(&v.OptionStats)
+	winBytes, _ := json.Marshal(&v.WeightedWinners)
+
+	optJson, winJson := string(optBytes), string(winBytes)
+
+	return []interface{}{
+		&v.VoteChain,
+		&v.Valid,
+		&v.CompleteStats.Count,
+		&v.CompleteStats.Weight,
+		&v.VotedStats.Count,
+		&v.VotedStats.Weight,
+		&v.AbstainedStats.Count,
+		&v.AbstainedStats.Weight,
+		&v.Turnout.UnweightedTurnout,
+		&v.Turnout.WeightedTurnout,
+		&v.Support.CountDenominator,
+		&v.Support.WeightDenominator,
+		&optJson,
+		&winJson,
 	}
 }

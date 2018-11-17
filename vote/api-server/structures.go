@@ -1,6 +1,7 @@
 package apiserver
 
 import (
+	"github.com/Emyrk/go-factom-vote/vote/common"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/kinds"
@@ -15,6 +16,11 @@ type ListInfo struct {
 type VoteList struct {
 	Info  ListInfo `json:"listInfo"`
 	Votes []Vote   `json:"voteList"`
+}
+
+type VoteResultList struct {
+	Info  ListInfo           `json:"listInfo"`
+	Votes []common.VoteStats `json:"resultList"`
 }
 
 var VoteListGraphQLType = graphql.NewObject(graphql.ObjectConfig{
@@ -59,6 +65,7 @@ type VoteAdmin struct {
 	AdminEntryHash   string `json:"adminEntryHash"`
 	AdminBlockHeight int    `json:"blockHeight"`
 	Registered       bool   `json:"registered"`
+	Complete         bool   `json:"complete"`
 
 	// Other
 	VoteInfo struct {
@@ -114,6 +121,9 @@ var VoteAdminGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.Int,
 		},
 		"registered": &graphql.Field{
+			Type: graphql.Boolean,
+		},
+		"complete": &graphql.Field{
 			Type: graphql.Boolean,
 		},
 		"voteInfo": &graphql.Field{
@@ -388,6 +398,54 @@ var ELAdminGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 	}})
 
 //
+
+// Results (Use common one as base)
+
+var VoteResultsListGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "VoteResultsList",
+	Fields: graphql.Fields{
+		"listInfo": &graphql.Field{
+			Type: JSON,
+		},
+		"resultList": &graphql.Field{
+			Type: graphql.NewList(VoteResultsGraphQLType),
+		},
+	}})
+
+var VoteResultsGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "VoteResults",
+	Fields: graphql.Fields{
+		"chainId": &graphql.Field{
+			Type: graphql.String,
+		},
+		"valid": &graphql.Field{
+			Type: graphql.Boolean,
+		},
+		"invalidReason": &graphql.Field{
+			Type: graphql.String,
+		},
+		"total": &graphql.Field{
+			Type: JSON,
+		},
+		"voted": &graphql.Field{
+			Type: JSON,
+		},
+		"abstain": &graphql.Field{
+			Type: JSON,
+		},
+		"options": &graphql.Field{
+			Type: JSON,
+		},
+		"turnout": &graphql.Field{
+			Type: JSON,
+		},
+		"support": &graphql.Field{
+			Type: JSON,
+		},
+		"weightedWinners": &graphql.Field{
+			Type: JSON,
+		},
+	}})
 
 // JSON json type
 var JSON = graphql.NewScalar(

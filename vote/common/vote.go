@@ -39,6 +39,9 @@ func NewVote() *Vote {
 	v.Commits = make(map[[32]byte]VoteCommit)
 	v.Reveals = make(map[[32]byte]VoteReveal)
 	v.VoteChainSync = identity.NewEntryBlockSync()
+	v.Proposal = NewEmptyProposalEntry()
+	v.EligibleList = NewEligibleList()
+
 	return v
 }
 
