@@ -7,6 +7,8 @@ import (
 
 	"database/sql"
 
+	"encoding/json"
+
 	"github.com/Emyrk/go-factom-vote/vote/common"
 	"github.com/Emyrk/go-factom-vote/vote/database"
 )
@@ -194,12 +196,33 @@ func scanEligibleVoter(rows *sql.Rows, v *EligibleVoter, extra []interface{}) er
 }
 
 func scanVoteResults(rows *sql.Rows, v *common.VoteStats, extra []interface{}) error {
-	var arr = v.RowValuePointers()
+	var optJson, winJson string
+
+	arr := []interface{}{
+		&v.VoteChain,
+		&v.Valid,
+		&v.CompleteStats.Count,
+		&v.CompleteStats.Weight,
+		&v.VotedStats.Count,
+		&v.VotedStats.Weight,
+		&v.AbstainedStats.Count,
+		&v.AbstainedStats.Weight,
+		&v.Turnout.UnweightedTurnout,
+		&v.Turnout.WeightedTurnout,
+		&v.Support.CountDenominator,
+		&v.Support.WeightDenominator,
+		&optJson,
+		&winJson,
+	}
 
 	arr = append(arr, extra...)
 	err := rows.Scan(
 		arr...,
 	)
+
+	json.Unmarshal([]byte(optJson), &v.OptionStats)
+	json.Unmarshal([]byte(winJson), &v.WeightedWinners)
+
 	return err
 }
 
