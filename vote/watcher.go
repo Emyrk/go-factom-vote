@@ -195,7 +195,7 @@ func (vw *VoteWatcher) ProcessVoteChain(entry interfaces.IEBEntry,
 	}
 
 	if err != nil {
-		return false, true, err
+		return false, true, fmt.Errorf("(votechain:exists) %s", err.Error())
 	}
 
 	v := NewVote()
@@ -220,7 +220,10 @@ func (vw *VoteWatcher) ProcessVoteChain(entry interfaces.IEBEntry,
 		return false, true, err
 	}
 
-	vw.AddNewVoteProposal(v)
+	err = vw.AddNewVoteProposal(v)
+	if err != nil {
+		return false, true, fmt.Errorf("(votechain:add) %s", err.Error())
+	}
 
 	return true, false, nil
 }

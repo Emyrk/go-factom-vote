@@ -25,7 +25,7 @@ func (s *SQLDatabase) IsVoteExist(voteId string) (bool, error) {
 	query := `SELECT chain_id FROM proposals WHERE chain_id = $1`
 	row := s.DB.QueryRow(query, voteId)
 	if err := row.Scan(&c); err != nil {
-		return false, err
+		return false, nil
 	}
 	fmt.Println(c)
 	return true, nil
