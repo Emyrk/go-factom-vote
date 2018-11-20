@@ -60,8 +60,6 @@ func NewProposalEntry(entry interfaces.IEBEntry, dbheight int) (*ProposalEntry, 
 		return nil, fmt.Errorf("Invalid signature on proposal")
 	}
 
-	fmt.Println(string(entry.GetContent()))
-
 	err = json.Unmarshal(entry.GetContent(), p)
 	if err != nil {
 		return nil, err
