@@ -238,7 +238,7 @@ func (vw *VoteWatcher) ProcessVoteCommit(entry interfaces.IEBEntry,
 
 	exists, err := vw.SQLDB.IsVoteExist(entry.GetChainID().String())
 	if !exists {
-		return false, true, fmt.Errorf("vote chain does not exist for commit")
+		return false, true, fmt.Errorf("vote chain does not exist for commit : %s", entry.GetChainID().String())
 	}
 
 	if err != nil {

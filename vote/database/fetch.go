@@ -21,8 +21,15 @@ func (s *SQLDatabase) IsRepeatedEntryExists(hash string) (bool, error) {
 }
 
 func (s *SQLDatabase) IsVoteExist(voteId string) (bool, error) {
+	var c string
 	query := `SELECT chain_id FROM proposals WHERE chain_id = $1`
-	return exists(s.DB.Query(query, voteId))
+	row := s.DB.QueryRow(query, voteId)
+	if err := row.Scan(&c); err != nil {
+		return false, err
+	}
+	fmt.Println(c)
+	return true, nil
+	//return exists(s.DB.QueryRow(query, voteId))
 }
 
 func (s *SQLDatabase) IsEligibleListExist(chainId string) (bool, error) {
@@ -51,10 +58,10 @@ func (s *SQLDatabase) IsEligibleListExistWithKey(chainId string) (bool, string, 
 }
 
 func exists(rows *sql.Rows, err error) (bool, error) {
+	defer rows.Close()
 	if !rows.Next() {
 		return false, nil
 	}
-	rows.Close()
 
 	if err == sql.ErrNoRows {
 		return false, nil
