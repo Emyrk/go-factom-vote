@@ -393,7 +393,7 @@ func (vw *VoteWatcher) ProcessNewEligibleVoter(entry interfaces.IEBEntry,
 
 	exists, key, err := vw.SQLDB.IsEligibleListExistWithKey(entry.GetChainID().String())
 	if !exists {
-		return false, true, fmt.Errorf("eligibility list does not exist")
+		return false, true, fmt.Errorf("eligibility list does not exist: %s", err.Error())
 	}
 
 	if err != nil {
