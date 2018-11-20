@@ -161,7 +161,7 @@ MainCatchupLoop:
 }
 
 func (s *Scraper) computeResults(dbheight int) error {
-	flog := scraperlog.WithFields(log.Fields{"func": "computeReslts", "height": dbheight})
+	flog := scraperlog.WithFields(log.Fields{"func": "computeResults", "height": dbheight})
 	votes, err := s.Database.FetchCompleteVotes(dbheight)
 	if err != nil {
 		return err
@@ -174,7 +174,7 @@ func (s *Scraper) computeResults(dbheight int) error {
 
 	for _, v := range votes {
 		// Grab voters, commits, and reveals
-		voters, err := s.Database.FetchEligibleVoters(v.Proposal.Vote.EligibleVotersChainID.String())
+		voters, err := s.Database.FetchEligibleVoters(v.Proposal.Vote.EligibleVotersChainID.String(), v.Proposal.Vote.PhasesBlockHeights.CommitStart)
 		if err != nil {
 			tx.Rollback()
 			return err
