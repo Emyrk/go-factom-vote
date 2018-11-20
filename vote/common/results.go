@@ -198,7 +198,6 @@ func ComputeVoteStatistics(vote *Vote, eligibleVoters []*EligibleVoter, commits 
 	for _, r := range reveals {
 		if len(r.Content.VoteOptions) > maxOptions || len(r.Content.VoteOptions) < minOptions {
 			flog.WithFields(log.Fields{"eHash": r.EntryHash.String(), "reason": "optioncount"}).Errorf("Toss")
-			fmt.Println(r.EntryHash.String(), len(r.Content.VoteOptions), maxOptions, minOptions, "MINMAX")
 			continue // Ignore, as it does not have the correct amount of votes
 		}
 

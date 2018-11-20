@@ -8,8 +8,10 @@ CREATE OR REPLACE FUNCTION insert_eligible_voter(
   RETURNS INTEGER AS $$
 BEGIN
 
-  IF exists(SELECT entry_hash FROM eligible_voters WHERE
-    eligible_voters.entry_hash = param_entry_hash)
+  IF exists(SELECT voter_id, eligible_list, entry_hash FROM eligible_voters WHERE
+    eligible_voters.entry_hash = param_entry_hash AND
+    eligible_voters.voter_id = param_voter_id AND
+    eligible_voters.eligible_list = param_eligible_list)
   THEN
     -- This is a replay
     RETURN 0;

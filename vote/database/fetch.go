@@ -27,7 +27,6 @@ func (s *SQLDatabase) IsVoteExist(voteId string) (bool, error) {
 	if err := row.Scan(&c); err != nil {
 		return false, nil
 	}
-	fmt.Println(c)
 	return true, nil
 	//return exists(s.DB.QueryRow(query, voteId))
 }

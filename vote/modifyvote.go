@@ -9,7 +9,6 @@ import (
 
 	"encoding/hex"
 
-	"github.com/Emyrk/go-factom-vote/vote/common"
 	. "github.com/Emyrk/go-factom-vote/vote/common"
 	"github.com/FactomProject/factom"
 	"github.com/FactomProject/factomd/common/interfaces"
@@ -39,19 +38,14 @@ func (vw *VoteWatcher) AddReveal(r VoteReveal, height uint32) error {
 		return fmt.Errorf("reveal does not validate hmac against commit.")
 	}
 
-	ri, err := vw.SQLDB.InsertAndQueryGeneric(&r)
+	err = vw.SQLDB.InsertGeneric(&r)
 	if err != nil {
 		return fmt.Errorf("(add:insert) %s", err.Error())
 	}
-	fmt.Println(r.EntryHash.String(), ri)
 	return nil
 }
 
 func (vw *VoteWatcher) AddCommit(c VoteCommit, height uint32) error {
-	cc := &c
-	query := fmt.Sprintf(`SELECT %s(%s)`, c.InsertFunction(), common.InsertQueryParams(cc))
-	fmt.Println(query)
-
 	err := vw.SQLDB.InsertGeneric(&c)
 	if err != nil {
 		return err
