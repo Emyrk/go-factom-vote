@@ -24,7 +24,7 @@ func (vw *VoteWatcher) AddReveal(r VoteReveal, height uint32) error {
 	// Find commit
 	partialCommit, err := vw.SQLDB.FetchCommitForReveal(r)
 	if err != nil {
-		return err
+		return fmt.Errorf("(add:fetchCommit) %s", err.Error())
 	}
 
 	// Validate reveal against commit
@@ -40,7 +40,7 @@ func (vw *VoteWatcher) AddReveal(r VoteReveal, height uint32) error {
 
 	err = vw.SQLDB.InsertGeneric(&r)
 	if err != nil {
-		return err
+		return fmt.Errorf("(add:insert) %s", err.Error())
 	}
 	return nil
 }

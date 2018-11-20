@@ -127,7 +127,6 @@ func (s *SQLDatabase) FetchCompleteVotes(height int) ([]*common.Vote, error) {
 }
 
 func (s *SQLDatabase) FetchEligibleVoters(chainid string, block_height int) ([]*common.EligibleVoter, error) {
-	v := new(common.EligibleVoter)
 	var err error
 
 	query := fmt.Sprintf(`
