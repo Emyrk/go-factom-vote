@@ -211,14 +211,14 @@ func (vw *VoteWatcher) ProcessVoteChain(entry interfaces.IEBEntry,
 	}
 	v.Proposal = proposal
 
-	exists, err = vw.SQLDB.IsEligibleListExist(v.Proposal.Vote.EligibleVotersChainID.String())
-	if !exists {
-		return false, true, fmt.Errorf("no eligible voter list with chain: %s", v.Proposal.Vote.EligibleVotersChainID.String())
-	}
-
-	if err != nil {
-		return false, true, err
-	}
+	//exists, err = vw.SQLDB.IsEligibleListExist(v.Proposal.Vote.EligibleVotersChainID.String())
+	//if !exists {
+	//	return false, true, fmt.Errorf("no eligible voter list with chain: %s", v.Proposal.Vote.EligibleVotersChainID.String())
+	//}
+	//
+	//if err != nil {
+	//	return false, true, err
+	//}
 
 	err = vw.AddNewVoteProposal(v)
 	if err != nil {
