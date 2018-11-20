@@ -319,7 +319,7 @@ func (vw *VoteWatcher) ProcessVoteRegister(entry interfaces.IEBEntry,
 
 	err = vw.SetRegistered(entry.GetChainID(), true)
 	if err != nil {
-		return false, false, err
+		return false, true, err
 	}
 	return true, false, nil
 }
@@ -347,7 +347,7 @@ func (vw *VoteWatcher) ProcessNewEligibleList(entry interfaces.IEBEntry,
 	list := NewEligibleList()
 	head, err := NewEligibleVoterHeader(entry)
 	if err != nil {
-		return false, false, err
+		return false, true, err
 	}
 
 	// Check if any voters in the content
@@ -374,7 +374,7 @@ func (vw *VoteWatcher) ProcessNewEligibleList(entry interfaces.IEBEntry,
 
 	err = vw.AddNewEligibleList(list, hash)
 	if err != nil {
-		return false, false, err
+		return false, true, err
 	}
 
 	return true, false, nil
@@ -417,7 +417,7 @@ func (vw *VoteWatcher) ProcessNewEligibleVoter(entry interfaces.IEBEntry,
 
 	ee, err := NewEligibleVoterEntry(entry, int(dBlockHeight), key)
 	if err != nil {
-		return false, false, err
+		return false, true, err
 	}
 
 	err = vw.AddEligibleVoter(ee, hash)
