@@ -9,6 +9,7 @@ import (
 
 	"encoding/hex"
 
+	"github.com/Emyrk/go-factom-vote/vote/common"
 	. "github.com/Emyrk/go-factom-vote/vote/common"
 	"github.com/FactomProject/factom"
 	"github.com/FactomProject/factomd/common/interfaces"
@@ -47,6 +48,10 @@ func (vw *VoteWatcher) AddReveal(r VoteReveal, height uint32) error {
 }
 
 func (vw *VoteWatcher) AddCommit(c VoteCommit, height uint32) error {
+	cc := &c
+	query := fmt.Sprintf(`SELECT %s(%s)`, c.InsertFunction(), common.InsertQueryParams(cc))
+	fmt.Println(query)
+
 	err := vw.SQLDB.InsertGeneric(&c)
 	if err != nil {
 		return err
