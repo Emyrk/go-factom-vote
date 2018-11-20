@@ -250,13 +250,13 @@ func (vw *VoteWatcher) ProcessVoteCommit(entry interfaces.IEBEntry,
 
 	c, err := NewVoteCommitFromEntry(entry, int(dBlockHeight))
 	if err != nil {
-		return false, false, err
+		return false, true, err
 	}
 
 	// We deference, as this structure is now immutable
 	err = vw.AddCommit(*c, dBlockHeight) // v.AddCommit(*c, dBlockHeight)
 	if err != nil {
-		return false, false, err
+		return false, true, err
 	}
 
 	return true, false, nil
@@ -284,14 +284,14 @@ func (vw *VoteWatcher) ProcessVoteReveal(entry interfaces.IEBEntry,
 
 	r, err := NewVoteRevealFromEntry(entry, int(dBlockHeight))
 	if err != nil {
-		return false, false, fmt.Errorf("(reveal:new) %s", err.Error())
+		return false, true, fmt.Errorf("(reveal:new) %s", err.Error())
 	}
 
 	// We deference, as this structure is now immutable
 	// Do signature validation in this function, it will interact with the database
 	err = vw.AddReveal(*r, dBlockHeight)
 	if err != nil {
-		return false, false, fmt.Errorf("(reveal:add) %s", err.Error())
+		return false, true, fmt.Errorf("(reveal:add) %s", err.Error())
 	}
 
 	return true, false, nil

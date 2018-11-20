@@ -72,12 +72,14 @@ func (vw *VoteWatcher) AddNewEligibleList(e *EligibleList, hash [32]byte) error 
 	for _, v := range e.EligibleVoters {
 		err := vw.addVoter(&v, tx)
 		if err != nil {
+			tx.Rollback()
 			return err
 		}
 	}
 
 	err = vw.SQLDB.InsertSubmittedHash(hash, tx)
 	if err != nil {
+		tx.Rollback()
 		return err
 	}
 
