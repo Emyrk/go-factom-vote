@@ -20,7 +20,7 @@ BEGIN
     RETURN 0;
   ELSE
 
-    -- Check if we are within the commitment phase
+    -- Check if we are within the reveal phase
     SELECT reveal_start, reveal_stop INTO rev_start, rev_stop FROM proposals WHERE chain_id = param_vote_chain;
     IF param_block_height > rev_stop OR param_block_height < rev_start
     THEN

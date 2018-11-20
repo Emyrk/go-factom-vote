@@ -17,6 +17,14 @@ func (db *SQLDatabase) InsertGenericTX(o common.ISQLObject, tx *sql.Tx) error {
 	return err
 }
 
+func (db *SQLDatabase) InsertAndQueryGeneric(o common.ISQLObject) (int, error) {
+	query := fmt.Sprintf(`SELECT %s(%s)`, o.InsertFunction(), common.InsertQueryParams(o))
+	row := db.DB.QueryRow(query)
+	var i int
+	err := row.Scan(&i)
+	return i, err
+}
+
 func (db *SQLDatabase) InsertGeneric(o common.ISQLObject) error {
 	query := fmt.Sprintf(`SELECT %s(%s)`, o.InsertFunction(), common.InsertQueryParams(o))
 	_, err := db.DB.Exec(query)

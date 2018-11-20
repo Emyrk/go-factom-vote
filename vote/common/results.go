@@ -2,7 +2,11 @@ package common
 
 import (
 	"fmt"
+
+	log "github.com/sirupsen/logrus"
 )
+
+var plog = log.WithField("file", "results")
 
 // This code is structured similar to the Javascript implementation:
 // https://github.com/PaulBernier/factom-vote/blob/master/src/read-vote/compute-vote-result.js
@@ -56,7 +60,7 @@ type VoteStats struct {
 	Valid          bool                       `json:"valid"` // If the vote has hit the acceptance criteria
 	InvalidReason  string                     `json:"invalidReason,omitempty"`
 	CompleteStats  OptionStats                `json:"total"`   // Total count and weight of all voters
-	VotedStats     OptionStats                `json:"voted"` // Total count and weight of all who voted (not abstained)
+	VotedStats     OptionStats                `json:"voted"`   // Total count and weight of all who voted (not abstained)
 	AbstainedStats OptionStats                `json:"abstain"` // Total count and weight of all who abstained
 	OptionStats    map[string]VoteOptionStats `json:"options"` // Count and weight of each option
 
@@ -154,6 +158,8 @@ func (s *VoteStats) ComputeSupport(vote *Vote) error {
 
 // ComputeVoteStatistics
 func ComputeVoteStatistics(vote *Vote, eligibleVoters []*EligibleVoter, commits []*VoteCommit, reveals []*VoteReveal) (*VoteStats, error) {
+	flog := plog.WithFields(log.Fields{"vote": vote.Proposal.ProposalChain.String()})
+
 	stats := NewVoteStats()
 	stats.VoteChain = vote.Proposal.ProposalChain.String()
 	for _, opt := range vote.Proposal.Vote.Config.Options {
@@ -191,6 +197,8 @@ func ComputeVoteStatistics(vote *Vote, eligibleVoters []*EligibleVoter, commits 
 	// Run through the reveals to tally up the vote options
 	for _, r := range reveals {
 		if len(r.Content.VoteOptions) > maxOptions || len(r.Content.VoteOptions) < minOptions {
+			flog.WithFields(log.Fields{"eHash": r.EntryHash.String(), "reason": "optioncount"}).Errorf("Toss")
+			fmt.Println(r.EntryHash.String(), len(r.Content.VoteOptions), maxOptions, minOptions, "MINMAX")
 			continue // Ignore, as it does not have the correct amount of votes
 		}
 

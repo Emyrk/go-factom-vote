@@ -38,10 +38,11 @@ func (vw *VoteWatcher) AddReveal(r VoteReveal, height uint32) error {
 		return fmt.Errorf("reveal does not validate hmac against commit.")
 	}
 
-	err = vw.SQLDB.InsertGeneric(&r)
+	ri, err := vw.SQLDB.InsertAndQueryGeneric(&r)
 	if err != nil {
 		return fmt.Errorf("(add:insert) %s", err.Error())
 	}
+	fmt.Println(r.EntryHash.String(), ri)
 	return nil
 }
 
