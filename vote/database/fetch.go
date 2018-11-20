@@ -131,11 +131,11 @@ func (s *SQLDatabase) FetchEligibleVoters(chainid string, block_height int) ([]*
 	var err error
 
 	query := fmt.Sprintf(`
-	SELECT %s FROM eligible_voters
+	SELECT eligible_voters.voter_id, eligible_list, weight, entry_hash, eligible_voters.block_height, signing_keys FROM eligible_voters
 	RIGHT JOIN
 	(SELECT voter_id, max(block_height) AS block_height FROM eligible_voters WHERE
     	eligible_list = $1 AND block_height < $2 GROUP BY (voter_id)) AS maximums
-	ON eligible_voters.voter_id = maximums.voter_id AND eligible_voters.block_height = maximums.block_height`, v.SelectRows())
+	ON eligible_voters.voter_id = maximums.voter_id AND eligible_voters.block_height = maximums.block_height`)
 	//query := fmt.Sprintf("SELECT %s FROM %s WHERE eligible_list = $1", v.SelectRows(), v.Table())
 	rows, err := s.DB.Query(query, chainid, block_height)
 	if err != nil {
