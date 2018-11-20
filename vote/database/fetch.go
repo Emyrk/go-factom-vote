@@ -38,7 +38,7 @@ func (s *SQLDatabase) IsEligibleListExist(chainId string) (bool, error) {
 
 func (s *SQLDatabase) IsEligibleListExistWithKey(chainId string) (bool, string, error) {
 	var chain, key string
-	query := `SELECT (chain_id, initiator_key) FROM eligible_list WHERE chain_id = $1`
+	query := `SELECT chain_id, initiator_key FROM eligible_list WHERE chain_id = $1`
 	row := s.DB.QueryRow(query, chainId)
 	err := row.Scan(&chain, &key)
 	if err != nil {
