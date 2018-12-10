@@ -196,10 +196,10 @@ var VDConfigGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.Int,
 		},
 		"acceptanceCriteria": &graphql.Field{
-			Type: JSON,
+			Type: graphql.String,
 		},
 		"winnerCriteria": &graphql.Field{
-			Type: JSON,
+			Type: graphql.String,
 		},
 		"allowAbstention": &graphql.Field{
 			Type: graphql.Boolean,
