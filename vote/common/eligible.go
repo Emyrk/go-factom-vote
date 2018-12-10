@@ -91,10 +91,12 @@ func NewEligibleVoterEntry(entry interfaces.IEBEntry, blockHeight int, signingke
 		return nil, fmt.Errorf("signature is invalid")
 	}
 
-	err = json.Unmarshal(entry.GetContent(), e.Content)
+	var list []EligibleVoter
+	err = json.Unmarshal(entry.GetContent(), &list)
 	if err != nil {
 		return nil, err
 	}
+	e.Content = list
 
 	for i := range e.Content {
 		e.Content[i].BlockHeight = blockHeight

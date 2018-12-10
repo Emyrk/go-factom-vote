@@ -21,8 +21,14 @@ func (s *SQLDatabase) IsRepeatedEntryExists(hash string) (bool, error) {
 }
 
 func (s *SQLDatabase) IsVoteExist(voteId string) (bool, error) {
+	var c string
 	query := `SELECT chain_id FROM proposals WHERE chain_id = $1`
-	return exists(s.DB.Query(query, voteId))
+	row := s.DB.QueryRow(query, voteId)
+	if err := row.Scan(&c); err != nil {
+		return false, nil
+	}
+	return true, nil
+	//return exists(s.DB.QueryRow(query, voteId))
 }
 
 func (s *SQLDatabase) IsEligibleListExist(chainId string) (bool, error) {
@@ -31,30 +37,21 @@ func (s *SQLDatabase) IsEligibleListExist(chainId string) (bool, error) {
 }
 
 func (s *SQLDatabase) IsEligibleListExistWithKey(chainId string) (bool, string, error) {
-	query := `SELECT (chain_id, initiator_key) FROM eligible_list WHERE chain_id = $1`
-	rows, err := s.DB.Query(query, chainId)
+	var chain, key string
+	query := `SELECT chain_id, initiator_key FROM eligible_list WHERE chain_id = $1`
+	row := s.DB.QueryRow(query, chainId)
+	err := row.Scan(&chain, &key)
 	if err != nil {
 		return false, "", err
 	}
-	defer rows.Close()
-
-	if rows.Next() {
-		var chain, key string
-		err = rows.Scan(&chain, &key)
-		if err != nil {
-			return false, "", err
-		}
-
-		return true, key, nil
-	}
-	return false, "", nil
+	return true, key, nil
 }
 
 func exists(rows *sql.Rows, err error) (bool, error) {
+	defer rows.Close()
 	if !rows.Next() {
 		return false, nil
 	}
-	rows.Close()
 
 	if err == sql.ErrNoRows {
 		return false, nil
@@ -126,12 +123,17 @@ func (s *SQLDatabase) FetchCompleteVotes(height int) ([]*common.Vote, error) {
 	return votes, nil
 }
 
-func (s *SQLDatabase) FetchEligibleVoters(chainid string) ([]*common.EligibleVoter, error) {
-	v := new(common.EligibleVoter)
+func (s *SQLDatabase) FetchEligibleVoters(chainid string, block_height int) ([]*common.EligibleVoter, error) {
 	var err error
 
-	query := fmt.Sprintf("SELECT %s FROM %s WHERE eligible_list = $1", v.SelectRows(), v.Table())
-	rows, err := s.DB.Query(query, chainid)
+	query := fmt.Sprintf(`
+	SELECT eligible_voters.voter_id, eligible_list, weight, entry_hash, eligible_voters.block_height, signing_keys FROM eligible_voters
+	RIGHT JOIN
+	(SELECT voter_id, max(block_height) AS block_height FROM eligible_voters WHERE
+    	eligible_list = $1 AND block_height < $2 GROUP BY (voter_id)) AS maximums
+	ON eligible_voters.voter_id = maximums.voter_id AND eligible_voters.block_height = maximums.block_height`)
+	//query := fmt.Sprintf("SELECT %s FROM %s WHERE eligible_list = $1", v.SelectRows(), v.Table())
+	rows, err := s.DB.Query(query, chainid, block_height)
 	if err != nil {
 		return nil, err
 	}

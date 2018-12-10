@@ -11,19 +11,19 @@ import (
 	"github.com/FactomProject/factomd/common/primitives"
 )
 
-func TestCommitJson(t *testing.T) {
-	j := `
-	{
-		“commitment”: "random"
-	}
-	`
-
-	c := new(VoteCommit)
-	err := json.Unmarshal([]byte(j), c)
-	if err != nil {
-		t.Error(err)
-	}
-}
+//func TestCommitJson(t *testing.T) {
+//	j := `
+//	{
+//		“commitment”: "random"
+//	}
+//	`
+//
+//	c := new(VoteCommit)
+//	err := json.Unmarshal([]byte(j), c.Content)
+//	if err != nil {
+//		t.Error(err)
+//	}
+//}
 
 func TestRevealJson(t *testing.T) {
 	j := `
@@ -134,8 +134,21 @@ func TestNewValidVoteProposal(t *testing.T) {
 
 	e.Content.Bytes = []byte(`{"proposal":{"title":"Vegetable Award","text":"Please vote for your favorite vegetable"},"vote":{"phasesBlockHeights":{"commitStart":49595,"commitEnd":49595,"revealStart":49596,"revealEnd":49596},"type":1,"config":{"options":["broccoli","spinach","avocado"],"minOptions":1,"maxOptions":2,"acceptanceCriteria":{"minTurnout":{"weighted":0.3,"unweighted":0.5}},"allowAbstention":true,"computeResultsAgainst":"ALL_ELIGIBLE_VOTERS","winnerCriteria":{"minSupport":{"*":{"weighted":0.6,"unweighted":0.4}}}},"eligibleVotersChainId":"84444341e0e60a496f75c98c57357805ec86e9f8e232348f1e60704e83bca2b0"}}`)
 
-	_, err := NewProposalEntry(e)
+	_, err := NewProposalEntry(e, 0)
 	if err != nil {
 		t.Error(err)
+	}
+}
+
+func TestEligibleVoter(t *testing.T) {
+	data := `[{"voterId":"2d98021e3cf71580102224b2fcb4c5c60595e8fdf6fd1b97c6ef63e9fb3ed635","weight":2},{"voterId":"44dc565dd5330aaec455583372b233bd1171af531d5083b6d4128b7909218319","weight":6}]`
+
+	var voters []EligibleVoter
+	err := json.Unmarshal([]byte(data), &voters)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(voters) != 2 {
+		t.Errorf("Not all voters marshaled")
 	}
 }
