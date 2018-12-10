@@ -216,7 +216,7 @@ var VDConfigGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 			Type: JSON,
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				s := p.Source.(GQVoteConfig)
-				crit := common.CriteriaStruct{}
+				crit := common.WinnerCriteriaStruct{}
 				err := json.Unmarshal([]byte(s.WinnerCriteria), &crit)
 				if err != nil {
 					return nil, err
