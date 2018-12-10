@@ -1,6 +1,8 @@
 package apiserver
 
 import (
+	"encoding/json"
+
 	"github.com/Emyrk/go-factom-vote/vote/common"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
@@ -88,17 +90,20 @@ type VoteDefinition struct {
 		RevealStart int `json:"revealStart"`
 		RevealStop  int `json:"reavealStop"`
 	} `json:"phasesBlockHeights"`
-	VoteType int `json:"type"`
-	Config   struct {
-		Options               []string `json:"options"`
-		MinOptions            int      `json:"minOptions"`
-		MaxOptions            int      `json:"maxOptions"`
-		AcceptanceCriteria    string   `json:"acceptanceCriteria"`
-		WinnerCriteria        string   `json:"winnerCriteria"`
-		AllowAbstention       bool     `json:"allowAbstention"`
-		ComputeResultsAgainst string   `json:"computeResultsAgainst"`
-	} `json:"config"`
-	EligibleVoterChain string `json:"eligibleVotersChainId"`
+	VoteType           int          `json:"type"`
+	Config             GQVoteConfig `json:"config"`
+	EligibleVoterChain string       `json:"eligibleVotersChainId"`
+}
+
+// Uses strings instead of full objects
+type GQVoteConfig struct {
+	Options               []string `json:"options"`
+	MinOptions            int      `json:"minOptions"`
+	MaxOptions            int      `json:"maxOptions"`
+	AcceptanceCriteria    string   `json:"acceptanceCriteria"`
+	WinnerCriteria        string   `json:"winnerCriteria"`
+	AllowAbstention       bool     `json:"allowAbstention"`
+	ComputeResultsAgainst string   `json:"computeResultsAgainst"`
 }
 
 var VoteAdminGraphQLType = graphql.NewObject(graphql.ObjectConfig{
@@ -196,10 +201,28 @@ var VDConfigGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.Int,
 		},
 		"acceptanceCriteria": &graphql.Field{
-			Type: graphql.String,
+			Type: JSON,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				s := p.Source.(GQVoteConfig)
+				crit := common.AcceptCriteriaStruct{}
+				err := json.Unmarshal([]byte(s.AcceptanceCriteria), &crit)
+				if err != nil {
+					return nil, err
+				}
+				return crit, nil
+			},
 		},
 		"winnerCriteria": &graphql.Field{
-			Type: graphql.String,
+			Type: JSON,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				s := p.Source.(GQVoteConfig)
+				crit := common.CriteriaStruct{}
+				err := json.Unmarshal([]byte(s.WinnerCriteria), &crit)
+				if err != nil {
+					return nil, err
+				}
+				return crit, nil
+			},
 		},
 		"allowAbstention": &graphql.Field{
 			Type: graphql.Boolean,
