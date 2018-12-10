@@ -203,19 +203,19 @@ func scanVoteResults(rows *sql.Rows, v *common.VoteStats, extra []interface{}) e
 	return err
 }
 
-func (g *GraphQLSQLDB) FetchAllVotes(registered, active bool, limit, offset int) (*VoteList, error) {
+func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset int) (*VoteList, error) {
 	query := fmt.Sprintf(`SELECT %s, count(*) OVER() AS full_count FROM proposals`, voterow)
 
 	where := ""
-	if registered || active {
+	if registered > 0 || active {
 		where = " WHERE "
 	}
-	if registered {
+	if registered == 1 {
 		where += " registered = TRUE "
-	} else {
+	} else if registered == 2 {
 		where += " registered = FALSE "
 	}
-	if registered && active {
+	if registered > 0 && active {
 		where += " AND "
 	}
 	if active {

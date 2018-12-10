@@ -162,12 +162,20 @@ func (s *GraphQLServer) allProposals() *graphql.Field {
 			},
 		},
 		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-			reg, _ := params.Args["registered"].(bool)
+			reg, ok := params.Args["registered"].(bool)
 			act, _ := params.Args["active"].(bool)
 			offset, _ := params.Args["offset"].(int)
 			limit, _ := params.Args["limit"].(int)
 
-			return s.SQLDB.FetchAllVotes(reg, act, limit, offset)
+			regNumber := 0
+			if ok {
+				if reg {
+					regNumber = 1
+				} else {
+					regNumber = 2
+				}
+			}
+			return s.SQLDB.FetchAllVotes(regNumber, act, limit, offset)
 		},
 	}
 }
