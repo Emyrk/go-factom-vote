@@ -212,6 +212,8 @@ func (g *GraphQLSQLDB) FetchAllVotes(registered, active bool, limit, offset int)
 	}
 	if registered {
 		where += " registered = TRUE "
+	} else {
+		where += " registered = FALSE "
 	}
 	if registered && active {
 		where += " AND "
