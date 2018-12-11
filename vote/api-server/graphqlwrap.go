@@ -296,13 +296,13 @@ func scanVote(rows *sql.Rows, v *Vote, extra []interface{}) error {
 		&v.Admin.VoteInitator,
 		&v.Admin.SigningKey,
 		&v.Admin.Signature,
-		&v.Admin.VoteInfo.Title,
-		&v.Admin.VoteInfo.Text,
-		&v.Admin.VoteInfo.ExternalRef.Href,
-		&v.Admin.VoteInfo.ExternalRef.Hash.Value,
-		&v.Admin.VoteInfo.ExternalRef.Hash.Algo,
 
 		// Definition
+		&v.Definition.VoteInfo.Title,
+		&v.Definition.VoteInfo.Text,
+		&v.Definition.VoteInfo.ExternalRef.Href,
+		&v.Definition.VoteInfo.ExternalRef.Hash.Value,
+		&v.Definition.VoteInfo.ExternalRef.Hash.Algo,
 		&v.Definition.PhasesBlockHeights.CommitStart,
 		&v.Definition.PhasesBlockHeights.CommitStop,
 		&v.Definition.PhasesBlockHeights.RevealStart,

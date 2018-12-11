@@ -40,7 +40,7 @@ var VoteListGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 type Vote struct {
 	Chainid    string         `json:"voteChainId"`
 	Admin      VoteAdmin      `json:"admin"`
-	Definition VoteDefinition `json:"definition"`
+	Definition VoteDefinition `json:"vote"`
 	Results    VoteResult     `json:"result"`
 }
 
@@ -51,7 +51,7 @@ var VoteGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		"voteChainId": &graphql.Field{
 			Type: graphql.String,
 		},
-		"definition": &graphql.Field{
+		"vote": &graphql.Field{
 			Type: VoteDefinitionGraphQLType,
 		},
 		"admin": &graphql.Field{
@@ -70,11 +70,11 @@ type VoteAdmin struct {
 	Complete         bool   `json:"complete"`
 
 	// Other
-	VoteInfo struct {
-		Title       string            `json:"title"`
-		Text        string            `json:"text"`
-		ExternalRef ExternalReference `json:"externalRef"`
-	} `json:"voteInfo"` // Title, description, etc
+	//VoteInfo struct {
+	//	Title       string            `json:"title"`
+	//	Text        string            `json:"text"`
+	//	ExternalRef ExternalReference `json:"externalRef"`
+	//} `json:"voteInfo"` // Title, description, etc
 }
 
 type ExternalReference struct {
@@ -95,6 +95,12 @@ type VoteDefinition struct {
 	VoteType           int          `json:"type"`
 	Config             GQVoteConfig `json:"config"`
 	EligibleVoterChain string       `json:"eligibleVotersChainId"`
+
+	VoteInfo struct {
+		Title       string            `json:"title"`
+		Text        string            `json:"text"`
+		ExternalRef ExternalReference `json:"externalRef"`
+	} `json:"proposal"` // Title, description, etc
 }
 
 // Uses strings instead of full objects
@@ -133,9 +139,9 @@ var VoteAdminGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		"complete": &graphql.Field{
 			Type: graphql.Boolean,
 		},
-		"voteInfo": &graphql.Field{
-			Type: VAVoteInfoGraphQLType,
-		},
+		//"voteInfo": &graphql.Field{
+		//	Type: VAVoteInfoGraphQLType,
+		//},
 	}})
 
 var VAVoteInfoGraphQLType = graphql.NewObject(graphql.ObjectConfig{
@@ -176,6 +182,9 @@ var VoteDefinitionGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"eligibleVotersChainId": &graphql.Field{
 			Type: graphql.String,
+		},
+		"proposal": &graphql.Field{
+			Type: VAVoteInfoGraphQLType,
 		},
 	}})
 
