@@ -77,8 +77,8 @@ type ProposalContent struct {
 	ExternalRef struct {
 		Href string `json:"href"`
 		Hash struct {
-			Value primitives.Hash `json:"value"`
-			Algo  string          `json:"algo"`
+			Value string `json:"value"`
+			Algo  string `json:"algo"`
 		} `json:"hash"`
 	} `json:"externalRef"`
 }
@@ -105,7 +105,7 @@ type VoteContent struct {
 		MinOptions            int                  `json:"minOptions"`         // min number of options the voter must select,
 		MaxOptions            int                  `json:"maxOptions"`         // max number of options the voter can select,
 		AcceptanceCriteria    AcceptCriteriaStruct `json:"acceptanceCriteria"` // (optional) list of terms for accepting the vote
-		WinnerCriteria        WinnerCriteriaStruct       `json:"winnerCriteria"`
+		WinnerCriteria        WinnerCriteriaStruct `json:"winnerCriteria"`
 	} `json:"config"`
 }
 

@@ -3,6 +3,8 @@ package apiserver
 import (
 	"encoding/json"
 
+	"fmt"
+
 	"github.com/Emyrk/go-factom-vote/vote/common"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
@@ -77,6 +79,12 @@ type VoteAdmin struct {
 	//} `json:"voteInfo"` // Title, description, etc
 }
 
+type VoteDetails struct {
+	Title       string            `json:"title"`
+	Text        string            `json:"text"`
+	ExternalRef ExternalReference `json:"externalRef"`
+}
+
 type ExternalReference struct {
 	Href string `json:"href"`
 	Hash struct {
@@ -96,11 +104,7 @@ type VoteDefinition struct {
 	Config             GQVoteConfig `json:"config"`
 	EligibleVoterChain string       `json:"eligibleVotersChainId"`
 
-	VoteInfo struct {
-		Title       string            `json:"title"`
-		Text        string            `json:"text"`
-		ExternalRef ExternalReference `json:"externalRef"`
-	} `json:"proposal"` // Title, description, etc
+	VoteInfo VoteDetails `json:"proposal"` // Title, description, etc
 }
 
 // Uses strings instead of full objects
@@ -150,15 +154,43 @@ var VAVoteInfoGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"title": &graphql.Field{
 			Type: graphql.String,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				vd, ok := p.Source.(VoteDetails)
+				if !ok {
+					return nil, fmt.Errorf("Bad type")
+				}
+				if vd.Title == "" {
+					return nil, nil
+				}
+
+				return vd.Title, nil
+			},
 		},
 		"text": &graphql.Field{
 			Type: graphql.String,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				vd, ok := p.Source.(VoteDetails)
+				if !ok {
+					return nil, fmt.Errorf("Bad type")
+				}
+				if vd.Text == "" {
+					return nil, nil
+				}
+
+				return vd.Text, nil
+			},
 		},
 		"externalRef": &graphql.Field{
 			Type: JSON,
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				ref := p.Source.(ExternalReference)
-				if ref.Href == "" && ref.Hash.Value == "" && ref.Hash.Algo == "" {
+				vd, ok := p.Source.(VoteDetails)
+				if !ok {
+					return nil, fmt.Errorf("Bad type")
+				}
+				ref := vd.ExternalRef
+				if ref.Href == "" &&
+					(ref.Hash.Value == "0000000000000000000000000000000000000000000000000000000000000000" || ref.Hash.Value == "") &&
+					ref.Hash.Algo == "" {
 					return nil, nil
 				}
 
