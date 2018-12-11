@@ -71,16 +71,18 @@ type VoteAdmin struct {
 
 	// Other
 	VoteInfo struct {
-		Title       string `json:"title"`
-		Text        string `json:"text"`
-		ExternalRef struct {
-			Href string `json:"href"`
-			Hash struct {
-				Value string `json:"value"`
-				Algo  string `json:"algo"`
-			} `json:"hash"`
-		} `json:"externalRef"`
+		Title       string            `json:"title"`
+		Text        string            `json:"text"`
+		ExternalRef ExternalReference `json:"externalRef"`
 	} `json:"voteInfo"` // Title, description, etc
+}
+
+type ExternalReference struct {
+	Href string `json:"href"`
+	Hash struct {
+		Value string `json:"value"`
+		Algo  string `json:"algo"`
+	}
 }
 
 type VoteDefinition struct {
@@ -148,6 +150,14 @@ var VAVoteInfoGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"externalRef": &graphql.Field{
 			Type: JSON,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				ref := p.Source.(ExternalReference)
+				if ref.Href == "" && ref.Hash.Value == "" && ref.Hash.Algo == "" {
+					return nil, nil
+				}
+
+				return ref, nil
+			},
 		},
 	}})
 
