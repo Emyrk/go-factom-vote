@@ -260,6 +260,11 @@ var VDConfigGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 				if err != nil {
 					return nil, err
 				}
+
+				if crit.MinTurnout.Weighted+crit.MinTurnout.Unweighted == 0 {
+					return nil, nil
+				}
+
 				return crit, nil
 			},
 		},
