@@ -454,7 +454,7 @@ var ELContainerGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"voters": &graphql.Field{
 			Description: "TODO: Should allow this to be broken up",
-			Type:        graphql.NewList(JSON),
+			Type:        graphql.NewList(ELVoter),
 		},
 	}})
 
