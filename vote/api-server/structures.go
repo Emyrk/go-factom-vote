@@ -434,8 +434,8 @@ type EligibleVoterContainer struct {
 
 type EligibleVoter struct {
 	// Given by Entry
-	VoterID    string `json:"voterId"`
-	VoteWeight int    `json:"weight"`
+	VoterID    string  `json:"voterId"`
+	VoteWeight float64 `json:"weight"`
 
 	// Given by entry context
 	BlockHeight  int    `json:"blockHeight"`
@@ -465,7 +465,7 @@ var ELVoter = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.String,
 		},
 		"weight": &graphql.Field{
-			Type: graphql.Int,
+			Type: graphql.Float,
 		},
 		"blockHeight": &graphql.Field{
 			Type: graphql.Int,

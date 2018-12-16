@@ -1,7 +1,7 @@
 CREATE OR REPLACE FUNCTION insert_eligible_voter(
   param_voter_id char(64),
   param_eligible_list char(64),
-  param_weight INTEGER,
+  param_weight FLOAT,
   param_entry_hash CHAR(64),
   param_block_height INTEGER,
   param_signing_keys VARCHAR)
