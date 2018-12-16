@@ -10,18 +10,18 @@ import (
 func (s *GraphQLServer) CreateSchema() (graphql.Schema, error) {
 	// Schema
 	fields := graphql.Fields{
-		"completed":               s.completedField(),
-		"proposal":                s.proposal(),
-		"allProposals":            s.allProposals(),
-		"eligibleList":            s.eligibleList(),
-		"eligibleVoters":          s.eligibleListVoters(),
-		"commit":                  s.commit(),
-		"reveal":                  s.reveal(),
-		"commits":                 s.commits(),
-		"reveals":                 s.reveals(),
-		"result":                  s.result(),
-		"results":                 s.results(),
-		"identity-keys-at-height": s.identityKeysAtHeight(),
+		"completed":            s.completedField(),
+		"proposal":             s.proposal(),
+		"allProposals":         s.allProposals(),
+		"eligibleList":         s.eligibleList(),
+		"eligibleVoters":       s.eligibleListVoters(),
+		"commit":               s.commit(),
+		"reveal":               s.reveal(),
+		"commits":              s.commits(),
+		"reveals":              s.reveals(),
+		"result":               s.result(),
+		"results":              s.results(),
+		"identityKeysAtHeight": s.identityKeysAtHeight(),
 	}
 
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
