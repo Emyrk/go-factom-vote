@@ -15,6 +15,9 @@ func main() {
 	var (
 		postgreshost = flag.String("phost", "localhost", "Postgres host")
 		postgresport = flag.Int("pport", 5432, "Postgres port")
+
+		factomdhost = flag.String("fhost", "localhost", "Factomd host")
+		factomdport = flag.Int("fport", 8088, "Factomd port")
 	)
 
 	flag.Parse()
@@ -31,7 +34,7 @@ func main() {
 		config.SqlConfigType = database.SQL_CON_LOCAL
 	}
 
-	srv, err := apiserver.NewGraphQLServer(*config)
+	srv, err := apiserver.NewGraphQLServer(*config, *factomdhost, *factomdport)
 	if err != nil {
 		panic(err)
 	}

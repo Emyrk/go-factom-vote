@@ -3,23 +3,27 @@ package apiserver
 import (
 	"log"
 
+	"encoding/hex"
+
+	"github.com/FactomProject/factom"
 	"github.com/graphql-go/graphql"
 )
 
 func (s *GraphQLServer) CreateSchema() (graphql.Schema, error) {
 	// Schema
 	fields := graphql.Fields{
-		"completed":      s.completedField(),
-		"proposal":       s.proposal(),
-		"allProposals":   s.allProposals(),
-		"eligibleList":   s.eligibleList(),
-		"eligibleVoters": s.eligibleListVoters(),
-		"commit":         s.commit(),
-		"reveal":         s.reveal(),
-		"commits":        s.commits(),
-		"reveals":        s.reveals(),
-		"result":         s.result(),
-		"results":        s.results(),
+		"completed":               s.completedField(),
+		"proposal":                s.proposal(),
+		"allProposals":            s.allProposals(),
+		"eligibleList":            s.eligibleList(),
+		"eligibleVoters":          s.eligibleListVoters(),
+		"commit":                  s.commit(),
+		"reveal":                  s.reveal(),
+		"commits":                 s.commits(),
+		"reveals":                 s.reveals(),
+		"result":                  s.result(),
+		"results":                 s.results(),
+		"identity-keys-at-height": s.identityKeysAtHeight(),
 	}
 
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
@@ -30,6 +34,37 @@ func (s *GraphQLServer) CreateSchema() (graphql.Schema, error) {
 	}
 
 	return schema, err
+}
+
+func (s *GraphQLServer) identityKeysAtHeight() *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.NewList(graphql.String),
+		Args: graphql.FieldConfigArgument{
+			"chain": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"blockheight": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.Int),
+			},
+		},
+		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+			chain := params.Args["chain"].(string)
+			height := params.Args["blockheight"].(int)
+			id := &factom.Identity{}
+			id.ChainID = chain
+			keys, err := id.GetKeysAtHeight(int64(height))
+			if err != nil {
+				return nil, err
+			}
+
+			var arr []string
+			for _, k := range keys {
+				arr = append(arr, hex.EncodeToString(k.Pub[:]))
+			}
+
+			return arr, nil
+		},
+	}
 }
 
 func (s *GraphQLServer) completedField() *graphql.Field {
