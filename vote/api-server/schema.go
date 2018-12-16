@@ -201,7 +201,7 @@ func (s *GraphQLServer) eligibleList() *graphql.Field {
 
 //func (g *GraphQLServer) EligibleListGraphQLType() *graphql.Object {
 //	return graphql.NewObject(graphql.ObjectConfig{
-//		Name: "EligbleListAdmin",
+//		Name: "EligibleListAdmin",
 //		Fields: graphql.Fields{
 //			"admin": &graphql.Field{
 //				Type: ELAdminGraphQLType,

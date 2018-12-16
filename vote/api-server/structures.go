@@ -44,6 +44,8 @@ type Vote struct {
 	Admin      VoteAdmin      `json:"admin"`
 	Definition VoteDefinition `json:"vote"`
 	Results    VoteResult     `json:"result"`
+
+	Proposal VoteDetails `json:"proposal"` // Title, description, etc
 }
 
 var VoteGraphQLType = graphql.NewObject(graphql.ObjectConfig{
@@ -58,6 +60,9 @@ var VoteGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"admin": &graphql.Field{
 			Type: VoteAdminGraphQLType,
+		},
+		"proposal": &graphql.Field{
+			Type: VAVoteInfoGraphQLType,
 		},
 	}})
 
@@ -104,7 +109,7 @@ type VoteDefinition struct {
 	Config             GQVoteConfig `json:"config"`
 	EligibleVoterChain string       `json:"eligibleVotersChainId"`
 
-	VoteInfo VoteDetails `json:"proposal"` // Title, description, etc
+	//VoteInfo VoteDetails `json:"proposal"` // Title, description, etc
 }
 
 // Uses strings instead of full objects
@@ -214,9 +219,6 @@ var VoteDefinitionGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"eligibleVotersChainId": &graphql.Field{
 			Type: graphql.String,
-		},
-		"proposal": &graphql.Field{
-			Type: VAVoteInfoGraphQLType,
 		},
 	}})
 
@@ -445,7 +447,7 @@ type EligibleVoter struct {
 }
 
 var ELContainerGraphQLType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "EligbleList",
+	Name: "EligibleList",
 	Fields: graphql.Fields{
 		"listInfo": &graphql.Field{
 			Type: JSON,
@@ -456,8 +458,28 @@ var ELContainerGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		},
 	}})
 
+var ELVoter = graphql.NewObject(graphql.ObjectConfig{
+	Name: "EligibleVoter",
+	Fields: graphql.Fields{
+		"voterId": &graphql.Field{
+			Type: graphql.String,
+		},
+		"weight": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"blockHeight": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"entryHash": &graphql.Field{
+			Type: graphql.String,
+		},
+		"keys": &graphql.Field{
+			Type: graphql.NewList(graphql.String),
+		},
+	}})
+
 var ELAdminGraphQLType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "EligbleListAdmin",
+	Name: "EligibleListAdmin",
 	Fields: graphql.Fields{
 		"chainId": &graphql.Field{
 			Type: graphql.String,
