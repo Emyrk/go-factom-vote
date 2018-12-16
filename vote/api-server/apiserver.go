@@ -3,8 +3,8 @@ package apiserver
 import (
 	"fmt"
 
-	"github.com/AdamSLevy/factom"
 	"github.com/Emyrk/go-factom-vote/vote/database"
+	"github.com/FactomProject/factom"
 )
 
 type GraphQLServer struct {

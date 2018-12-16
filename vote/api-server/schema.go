@@ -3,8 +3,6 @@ package apiserver
 import (
 	"log"
 
-	"encoding/hex"
-
 	"github.com/FactomProject/factom"
 	"github.com/graphql-go/graphql"
 )
@@ -44,12 +42,20 @@ func (s *GraphQLServer) identityKeysAtHeight() *graphql.Field {
 				Type: graphql.NewNonNull(graphql.String),
 			},
 			"blockheight": &graphql.ArgumentConfig{
-				Type: graphql.NewNonNull(graphql.Int),
+				Type: graphql.Int,
 			},
 		},
 		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 			chain := params.Args["chain"].(string)
-			height := params.Args["blockheight"].(int)
+			height, ok := params.Args["blockheight"].(int)
+			if !ok {
+				heights, err := factom.GetHeights()
+				if err != nil {
+					return nil, err
+				}
+				height = int(heights.EntryHeight)
+			}
+
 			id := &factom.Identity{}
 			id.ChainID = chain
 			keys, err := id.GetKeysAtHeight(int64(height))
@@ -59,7 +65,7 @@ func (s *GraphQLServer) identityKeysAtHeight() *graphql.Field {
 
 			var arr []string
 			for _, k := range keys {
-				arr = append(arr, hex.EncodeToString(k.Pub[:]))
+				arr = append(arr, k.PubString())
 			}
 
 			return arr, nil
