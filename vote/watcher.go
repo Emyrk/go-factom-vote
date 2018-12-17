@@ -353,7 +353,7 @@ func (vw *VoteWatcher) ProcessNewEligibleList(entry interfaces.IEBEntry,
 	// Check if any voters in the content
 	var voters []EligibleVoter
 	err = json.Unmarshal(entry.GetContent(), &voters)
-	if err != nil && len(entry.GetContent()) > 0) {
+	if err != nil && len(entry.GetContent()) > 0 {
 		return false, false, err
 	}
 
