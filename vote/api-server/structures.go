@@ -235,7 +235,7 @@ var PhasesBlockGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		"revealStart": &graphql.Field{
 			Type: graphql.Int,
 		},
-		"reavealEnd": &graphql.Field{
+		"revealEnd": &graphql.Field{
 			Type: graphql.Int,
 		},
 	}})
