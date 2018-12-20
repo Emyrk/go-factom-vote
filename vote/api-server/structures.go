@@ -55,6 +55,9 @@ var VoteGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		"admin": &graphql.Field{
 			Type: VoteAdminGraphQLType,
 		},
+		"results": &graphql.Field{
+			Type: VoteResultsGraphQLType,
+		},
 	}})
 
 type VoteAdmin struct {
@@ -84,9 +87,9 @@ type VoteAdmin struct {
 type VoteDefinition struct {
 	PhasesBlockHeights struct {
 		CommitStart int `json:"commitStart"`
-		CommitStop  int `json:"commitStop"`
+		CommitStop  int `json:"commitEnd"`
 		RevealStart int `json:"revealStart"`
-		RevealStop  int `json:"reavealStop"`
+		RevealStop  int `json:"reavealEnd"`
 	} `json:"phasesBlockHeights"`
 	VoteType int `json:"type"`
 	Config   struct {
@@ -151,7 +154,7 @@ var VoteDefinitionGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 	Description: "The vote definition",
 	Fields: graphql.Fields{
 		"phasesBlockHeights": &graphql.Field{
-			Type: JSON,
+			Type: PhasesBlockGraphQLType,
 		},
 		"type": &graphql.Field{
 			Type: graphql.String,
@@ -161,6 +164,24 @@ var VoteDefinitionGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"eligibleVotersChainId": &graphql.Field{
 			Type: graphql.String,
+		},
+	}})
+
+var PhasesBlockGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "PhasesBlocks",
+	Description: "The block to distinguish the block heigths for the various phases of voting",
+	Fields: graphql.Fields{
+		"commitStart": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"commitEnd": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"revealStart": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"reavealEnd": &graphql.Field{
+			Type: graphql.Int,
 		},
 	}})
 
