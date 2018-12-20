@@ -101,9 +101,9 @@ type ExternalReference struct {
 type VoteDefinition struct {
 	PhasesBlockHeights struct {
 		CommitStart int `json:"commitStart"`
-		CommitStop  int `json:"commitStop"`
+		CommitStop  int `json:"commitEnd"`
 		RevealStart int `json:"revealStart"`
-		RevealStop  int `json:"reavealStop"`
+		RevealStop  int `json:"revealEnd"`
 	} `json:"phasesBlockHeights"`
 	VoteType           int          `json:"type"`
 	Config             GQVoteConfig `json:"config"`
