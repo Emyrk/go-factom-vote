@@ -27,4 +27,4 @@ WORKDIR $GOPATH/src/github.com/Emyrk/go-factom-vote/vote/api-server/api-serverd
 # Build and install factomd
 RUN go install
 
-ENTRYPOINT ["/go/bin/api-serverd", "-phost=voting-postgres-db"]
+ENTRYPOINT ["/go/bin/api-serverd", "-phost=voting-postgres-db", "-fhost=voting-factomd"]

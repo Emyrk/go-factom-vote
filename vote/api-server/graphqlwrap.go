@@ -234,17 +234,19 @@ func scanVoteResults(rows *sql.Rows, v *common.VoteStats, extra []interface{}) e
 	return err
 }
 
-func (g *GraphQLSQLDB) FetchAllVotes(registered, active bool, limit, offset int) (*VoteList, error) {
+func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset int) (*VoteList, error) {
 	query := fmt.Sprintf(`SELECT %s, count(*) OVER() AS full_count FROM proposals`, voterow)
 
 	where := ""
-	if registered || active {
+	if registered > 0 || active {
 		where = " WHERE "
 	}
-	if registered {
+	if registered == 1 {
 		where += " registered = TRUE "
+	} else if registered == 2 {
+		where += " registered = FALSE "
 	}
-	if registered && active {
+	if registered > 0 && active {
 		where += " AND "
 	}
 	if active {
@@ -294,13 +296,13 @@ func scanVote(rows *sql.Rows, v *Vote, extra []interface{}) error {
 		&v.Admin.VoteInitator,
 		&v.Admin.SigningKey,
 		&v.Admin.Signature,
-		&v.Admin.VoteInfo.Title,
-		&v.Admin.VoteInfo.Text,
-		&v.Admin.VoteInfo.ExternalRef.Href,
-		&v.Admin.VoteInfo.ExternalRef.Hash.Value,
-		&v.Admin.VoteInfo.ExternalRef.Hash.Algo,
 
 		// Definition
+		&v.Proposal.Title,
+		&v.Proposal.Text,
+		&v.Proposal.ExternalRef.Href,
+		&v.Proposal.ExternalRef.Hash.Value,
+		&v.Proposal.ExternalRef.Hash.Algo,
 		&v.Definition.PhasesBlockHeights.CommitStart,
 		&v.Definition.PhasesBlockHeights.CommitStop,
 		&v.Definition.PhasesBlockHeights.RevealStart,

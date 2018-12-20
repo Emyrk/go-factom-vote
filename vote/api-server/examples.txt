@@ -1,8 +1,8 @@
 # Vote Schema for everything (except results)
 {
-	proposal(chain:"b69d30c20e18818c06eea444bb9bd43d184e259a3013ddc508399756b23e0b20"){
+    proposal(chain:"616e649cdfb3a0cdd514bbaf4c9428f7757466bfef78dba00220213426556f5d"){
     voteChainId
-    definition{
+    vote {
       phasesBlockHeights
       config{
         options
@@ -12,6 +12,12 @@
         winnerCriteria
         allowAbstention
         computeResultsAgainst
+      }
+
+      proposal{
+        externalRef
+        text
+        title
       }
       eligibleVotersChainId
       type
@@ -23,11 +29,39 @@
       adminEntryHash
       blockHeight
       registered
-      voteInfo {
-        externalRef
-        title
-      	text
+    }
+  }
+}
+
+{
+	proposal(chain:"b69d30c20e18818c06eea444bb9bd43d184e259a3013ddc508399756b23e0b20"){
+    voteChainId
+    vote{
+      phasesBlockHeights
+      config{
+        options
+        minOptions
+        maxOptions
+        acceptanceCriteria
+        winnerCriteria
+        allowAbstention
+        computeResultsAgainst
       }
+        proposal {
+          externalRef
+          title
+            text
+        }
+      eligibleVotersChainId
+      type
+    }
+    admin {
+      voteInitiator
+      signingKey
+      signature
+      adminEntryHash
+      blockHeight
+      registered
     }
   }
 }

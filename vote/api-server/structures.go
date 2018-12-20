@@ -1,6 +1,10 @@
 package apiserver
 
 import (
+	"encoding/json"
+
+	"fmt"
+
 	"github.com/Emyrk/go-factom-vote/vote/common"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
@@ -38,8 +42,10 @@ var VoteListGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 type Vote struct {
 	Chainid    string         `json:"voteChainId"`
 	Admin      VoteAdmin      `json:"admin"`
-	Definition VoteDefinition `json:"definition"`
+	Definition VoteDefinition `json:"vote"`
 	Results    VoteResult     `json:"result"`
+
+	Proposal VoteDetails `json:"proposal"` // Title, description, etc
 }
 
 var VoteGraphQLType = graphql.NewObject(graphql.ObjectConfig{
@@ -49,14 +55,14 @@ var VoteGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		"voteChainId": &graphql.Field{
 			Type: graphql.String,
 		},
-		"definition": &graphql.Field{
+		"vote": &graphql.Field{
 			Type: VoteDefinitionGraphQLType,
 		},
 		"admin": &graphql.Field{
 			Type: VoteAdminGraphQLType,
 		},
-		"results": &graphql.Field{
-			Type: VoteResultsGraphQLType,
+		"proposal": &graphql.Field{
+			Type: VAVoteInfoGraphQLType,
 		},
 	}})
 
@@ -71,37 +77,50 @@ type VoteAdmin struct {
 	Complete         bool   `json:"complete"`
 
 	// Other
-	VoteInfo struct {
-		Title       string `json:"title"`
-		Text        string `json:"text"`
-		ExternalRef struct {
-			Href string `json:"href"`
-			Hash struct {
-				Value string `json:"value"`
-				Algo  string `json:"algo"`
-			} `json:"hash"`
-		} `json:"externalRef"`
-	} `json:"voteInfo"` // Title, description, etc
+	//VoteInfo struct {
+	//	Title       string            `json:"title"`
+	//	Text        string            `json:"text"`
+	//	ExternalRef ExternalReference `json:"externalRef"`
+	//} `json:"voteInfo"` // Title, description, etc
+}
+
+type VoteDetails struct {
+	Title       string            `json:"title"`
+	Text        string            `json:"text"`
+	ExternalRef ExternalReference `json:"externalRef"`
+}
+
+type ExternalReference struct {
+	Href string `json:"href"`
+	Hash struct {
+		Value string `json:"value"`
+		Algo  string `json:"algo"`
+	}
 }
 
 type VoteDefinition struct {
 	PhasesBlockHeights struct {
 		CommitStart int `json:"commitStart"`
-		CommitStop  int `json:"commitEnd"`
+		CommitStop  int `json:"commitStop"`
 		RevealStart int `json:"revealStart"`
-		RevealStop  int `json:"reavealEnd"`
+		RevealStop  int `json:"reavealStop"`
 	} `json:"phasesBlockHeights"`
-	VoteType int `json:"type"`
-	Config   struct {
-		Options               []string `json:"options"`
-		MinOptions            int      `json:"minOptions"`
-		MaxOptions            int      `json:"maxOptions"`
-		AcceptanceCriteria    string   `json:"acceptanceCriteria"`
-		WinnerCriteria        string   `json:"winnerCriteria"`
-		AllowAbstention       bool     `json:"allowAbstention"`
-		ComputeResultsAgainst string   `json:"computeResultsAgainst"`
-	} `json:"config"`
-	EligibleVoterChain string `json:"eligibleVotersChainId"`
+	VoteType           int          `json:"type"`
+	Config             GQVoteConfig `json:"config"`
+	EligibleVoterChain string       `json:"eligibleVotersChainId"`
+
+	//VoteInfo VoteDetails `json:"proposal"` // Title, description, etc
+}
+
+// Uses strings instead of full objects
+type GQVoteConfig struct {
+	Options               []string `json:"options"`
+	MinOptions            int      `json:"minOptions"`
+	MaxOptions            int      `json:"maxOptions"`
+	AcceptanceCriteria    string   `json:"acceptanceCriteria"`
+	WinnerCriteria        string   `json:"winnerCriteria"`
+	AllowAbstention       bool     `json:"allowAbstention"`
+	ComputeResultsAgainst string   `json:"computeResultsAgainst"`
 }
 
 var VoteAdminGraphQLType = graphql.NewObject(graphql.ObjectConfig{
@@ -129,9 +148,9 @@ var VoteAdminGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		"complete": &graphql.Field{
 			Type: graphql.Boolean,
 		},
-		"voteInfo": &graphql.Field{
-			Type: VAVoteInfoGraphQLType,
-		},
+		//"voteInfo": &graphql.Field{
+		//	Type: VAVoteInfoGraphQLType,
+		//},
 	}})
 
 var VAVoteInfoGraphQLType = graphql.NewObject(graphql.ObjectConfig{
@@ -140,12 +159,48 @@ var VAVoteInfoGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"title": &graphql.Field{
 			Type: graphql.String,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				vd, ok := p.Source.(VoteDetails)
+				if !ok {
+					return nil, fmt.Errorf("Bad type")
+				}
+				if vd.Title == "" {
+					return nil, nil
+				}
+
+				return vd.Title, nil
+			},
 		},
 		"text": &graphql.Field{
 			Type: graphql.String,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				vd, ok := p.Source.(VoteDetails)
+				if !ok {
+					return nil, fmt.Errorf("Bad type")
+				}
+				if vd.Text == "" {
+					return nil, nil
+				}
+
+				return vd.Text, nil
+			},
 		},
 		"externalRef": &graphql.Field{
 			Type: JSON,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				vd, ok := p.Source.(VoteDetails)
+				if !ok {
+					return nil, fmt.Errorf("Bad type")
+				}
+				ref := vd.ExternalRef
+				if ref.Href == "" &&
+					(ref.Hash.Value == "0000000000000000000000000000000000000000000000000000000000000000" || ref.Hash.Value == "") &&
+					ref.Hash.Algo == "" {
+					return nil, nil
+				}
+
+				return ref, nil
+			},
 		},
 	}})
 
@@ -218,9 +273,32 @@ var VDConfigGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"acceptanceCriteria": &graphql.Field{
 			Type: JSON,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				s := p.Source.(GQVoteConfig)
+				crit := common.AcceptCriteriaStruct{}
+				err := json.Unmarshal([]byte(s.AcceptanceCriteria), &crit)
+				if err != nil {
+					return nil, err
+				}
+
+				if crit.MinTurnout.Weighted+crit.MinTurnout.Unweighted == 0 {
+					return nil, nil
+				}
+
+				return crit, nil
+			},
 		},
 		"winnerCriteria": &graphql.Field{
 			Type: JSON,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				s := p.Source.(GQVoteConfig)
+				crit := common.WinnerCriteriaStruct{}
+				err := json.Unmarshal([]byte(s.WinnerCriteria), &crit)
+				if err != nil {
+					return nil, err
+				}
+				return crit, nil
+			},
 		},
 		"allowAbstention": &graphql.Field{
 			Type: graphql.Boolean,
@@ -374,8 +452,8 @@ type EligibleVoterContainer struct {
 
 type EligibleVoter struct {
 	// Given by Entry
-	VoterID    string `json:"voterId"`
-	VoteWeight int    `json:"weight"`
+	VoterID    string  `json:"voterId"`
+	VoteWeight float64 `json:"weight"`
 
 	// Given by entry context
 	BlockHeight  int    `json:"blockHeight"`
@@ -387,19 +465,39 @@ type EligibleVoter struct {
 }
 
 var ELContainerGraphQLType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "EligbleList",
+	Name: "EligibleList",
 	Fields: graphql.Fields{
 		"listInfo": &graphql.Field{
 			Type: JSON,
 		},
 		"voters": &graphql.Field{
 			Description: "TODO: Should allow this to be broken up",
-			Type:        graphql.NewList(JSON),
+			Type:        graphql.NewList(ELVoter),
+		},
+	}})
+
+var ELVoter = graphql.NewObject(graphql.ObjectConfig{
+	Name: "EligibleVoter",
+	Fields: graphql.Fields{
+		"voterId": &graphql.Field{
+			Type: graphql.String,
+		},
+		"weight": &graphql.Field{
+			Type: graphql.Float,
+		},
+		"blockHeight": &graphql.Field{
+			Type: graphql.Int,
+		},
+		"entryHash": &graphql.Field{
+			Type: graphql.String,
+		},
+		"keys": &graphql.Field{
+			Type: graphql.NewList(graphql.String),
 		},
 	}})
 
 var ELAdminGraphQLType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "EligbleListAdmin",
+	Name: "EligibleListAdmin",
 	Fields: graphql.Fields{
 		"chainId": &graphql.Field{
 			Type: graphql.String,

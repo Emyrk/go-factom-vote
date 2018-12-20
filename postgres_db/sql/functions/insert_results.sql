@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION insert_results(
   param_complete_count FLOAT,
   param_complete_weight FLOAT,
   param_voted_count FLOAT,
-  param_voted_weight integer,
+  param_voted_weight FLOAT,
   param_abstained_count FLOAT,
   param_abstained_weight FLOAT,
   param_turnout_unweighted FLOAT,

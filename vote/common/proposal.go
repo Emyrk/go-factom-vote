@@ -77,8 +77,8 @@ type ProposalContent struct {
 	ExternalRef struct {
 		Href string `json:"href"`
 		Hash struct {
-			Value primitives.Hash `json:"value"`
-			Algo  string          `json:"algo"`
+			Value string `json:"value"`
+			Algo  string `json:"algo"`
 		} `json:"hash"`
 	} `json:"externalRef"`
 }
@@ -105,7 +105,7 @@ type VoteContent struct {
 		MinOptions            int                  `json:"minOptions"`         // min number of options the voter must select,
 		MaxOptions            int                  `json:"maxOptions"`         // max number of options the voter can select,
 		AcceptanceCriteria    AcceptCriteriaStruct `json:"acceptanceCriteria"` // (optional) list of terms for accepting the vote
-		WinnerCriteria        CriteriaStruct       `json:"winnerCriteria"`
+		WinnerCriteria        WinnerCriteriaStruct `json:"winnerCriteria"`
 	} `json:"config"`
 }
 
@@ -113,14 +113,14 @@ type AcceptCriteriaStruct struct {
 	MinSupport struct {
 		Weighted   float64 `json:"weighted"`
 		Unweighted float64 `json:"unweighted"`
-	} `json:"minSupport, omitempty"`
+	} `json:"-"`
 	MinTurnout struct {
 		Weighted   float64 `json:"weighted"`
 		Unweighted float64 `json:"unweighted"`
 	} `json:"minTurnout, omitempty"`
 }
 
-type CriteriaStruct struct {
+type WinnerCriteriaStruct struct {
 	// The strings in the map are the options. "OptionA", etc
 	MinSupport map[string]struct {
 		Weighted   float64 `json:"weighted"`
@@ -129,7 +129,7 @@ type CriteriaStruct struct {
 	MinTurnout struct {
 		Weighted   float64 `json:"weighted"`
 		Unweighted float64 `json:"unweighted"`
-	} `json:"minTurnout, omitempty"`
+	} `json:"-"`
 }
 
 // IsDataValid runs a check on the data to check if it's valid against the rules

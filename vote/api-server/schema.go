@@ -3,23 +3,25 @@ package apiserver
 import (
 	"log"
 
+	"github.com/FactomProject/factom"
 	"github.com/graphql-go/graphql"
 )
 
 func (s *GraphQLServer) CreateSchema() (graphql.Schema, error) {
 	// Schema
 	fields := graphql.Fields{
-		"completed":      s.completedField(),
-		"proposal":       s.proposal(),
-		"allProposals":   s.allProposals(),
-		"eligibleList":   s.eligibleList(),
-		"eligibleVoters": s.eligibleListVoters(),
-		"commit":         s.commit(),
-		"reveal":         s.reveal(),
-		"commits":        s.commits(),
-		"reveals":        s.reveals(),
-		"result":         s.result(),
-		"results":        s.results(),
+		"completed":            s.completedField(),
+		"proposal":             s.proposal(),
+		"allProposals":         s.allProposals(),
+		"eligibleList":         s.eligibleList(),
+		"eligibleVoters":       s.eligibleListVoters(),
+		"commit":               s.commit(),
+		"reveal":               s.reveal(),
+		"commits":              s.commits(),
+		"reveals":              s.reveals(),
+		"result":               s.result(),
+		"results":              s.results(),
+		"identityKeysAtHeight": s.identityKeysAtHeight(),
 	}
 
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
@@ -30,6 +32,45 @@ func (s *GraphQLServer) CreateSchema() (graphql.Schema, error) {
 	}
 
 	return schema, err
+}
+
+func (s *GraphQLServer) identityKeysAtHeight() *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.NewList(graphql.String),
+		Args: graphql.FieldConfigArgument{
+			"chain": &graphql.ArgumentConfig{
+				Type: graphql.NewNonNull(graphql.String),
+			},
+			"blockheight": &graphql.ArgumentConfig{
+				Type: graphql.Int,
+			},
+		},
+		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+			chain := params.Args["chain"].(string)
+			height, ok := params.Args["blockheight"].(int)
+			if !ok {
+				heights, err := factom.GetHeights()
+				if err != nil {
+					return nil, err
+				}
+				height = int(heights.EntryHeight)
+			}
+
+			id := &factom.Identity{}
+			id.ChainID = chain
+			keys, err := id.GetKeysAtHeight(int64(height))
+			if err != nil {
+				return nil, err
+			}
+
+			var arr []string
+			for _, k := range keys {
+				arr = append(arr, k.PubString())
+			}
+
+			return arr, nil
+		},
+	}
 }
 
 func (s *GraphQLServer) completedField() *graphql.Field {
@@ -162,12 +203,20 @@ func (s *GraphQLServer) allProposals() *graphql.Field {
 			},
 		},
 		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-			reg, _ := params.Args["registered"].(bool)
+			reg, ok := params.Args["registered"].(bool)
 			act, _ := params.Args["active"].(bool)
 			offset, _ := params.Args["offset"].(int)
 			limit, _ := params.Args["limit"].(int)
 
-			return s.SQLDB.FetchAllVotes(reg, act, limit, offset)
+			regNumber := 0
+			if ok {
+				if reg {
+					regNumber = 1
+				} else {
+					regNumber = 2
+				}
+			}
+			return s.SQLDB.FetchAllVotes(regNumber, act, limit, offset)
 		},
 	}
 }
@@ -193,7 +242,7 @@ func (s *GraphQLServer) eligibleList() *graphql.Field {
 
 //func (g *GraphQLServer) EligibleListGraphQLType() *graphql.Object {
 //	return graphql.NewObject(graphql.ObjectConfig{
-//		Name: "EligbleListAdmin",
+//		Name: "EligibleListAdmin",
 //		Fields: graphql.Fields{
 //			"admin": &graphql.Field{
 //				Type: ELAdminGraphQLType,

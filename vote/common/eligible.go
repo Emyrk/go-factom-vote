@@ -110,7 +110,7 @@ func NewEligibleVoterEntry(entry interfaces.IEBEntry, blockHeight int, signingke
 type EligibleVoter struct {
 	// Given by Entry
 	VoterID    primitives.Hash `json:"voterId"`
-	VoteWeight int             `json:"weight"`
+	VoteWeight float64         `json:"weight"`
 
 	// Given by entry context
 	BlockHeight  int             `json:"blockHeight"`

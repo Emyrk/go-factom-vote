@@ -21,7 +21,7 @@ func (v *Vote) InsertFunction() string {
 }
 
 func (v *Vote) ScanRow(row SQLRowWithScan) (*Vote, error) {
-	var vi, sigKey, sig, hash, egchain, options, chain, entry, acceptCriteria, winnerCriteria string
+	var vi, sigKey, sig, egchain, options, chain, entry, acceptCriteria, winnerCriteria string
 	v.Proposal = NewEmptyProposalEntry()
 	v.EligibleList = NewEligibleList()
 
@@ -32,7 +32,7 @@ func (v *Vote) ScanRow(row SQLRowWithScan) (*Vote, error) {
 		&v.Proposal.Proposal.Title,
 		&v.Proposal.Proposal.Text,
 		&v.Proposal.Proposal.ExternalRef.Href,
-		&hash, // External Hash
+		&v.Proposal.Proposal.ExternalRef.Hash.Value, // External Hash
 		&v.Proposal.Proposal.ExternalRef.Hash.Algo,
 		&v.Proposal.Vote.PhasesBlockHeights.CommitStart,
 		&v.Proposal.Vote.PhasesBlockHeights.CommitEnd,
@@ -63,9 +63,6 @@ func (v *Vote) ScanRow(row SQLRowWithScan) (*Vote, error) {
 
 	sigBytes, _ := hex.DecodeString(sig)
 	v.Proposal.InitiatorSignature.SetSignature(sigBytes)
-
-	hashBytes, _ := hex.DecodeString(hash)
-	v.Proposal.Proposal.ExternalRef.Hash.Value.SetBytes(hashBytes)
 
 	egChainBytes, _ := hex.DecodeString(egchain)
 	v.Proposal.Vote.EligibleVotersChainID.SetBytes(egChainBytes)
@@ -118,7 +115,7 @@ func (v *Vote) RowValuePointers() []interface{} {
 		v.Proposal.VoteInitiator.String(), // Vote Initiator
 		v.Proposal.InitiatorKey.String(), // SigKey
 		hex.EncodeToString(data), // Signature
-		v.Proposal.Proposal.ExternalRef.Hash.Value.String(), // External Hash
+		v.Proposal.Proposal.ExternalRef.Hash.Value, // External Hash
 		v.Proposal.Vote.EligibleVotersChainID.String(), // Eligible Voter Chain
 		strings.Join(v.Proposal.Vote.Config.Options, ","), // Vote Options
 		v.Proposal.ProposalChain.String(),
