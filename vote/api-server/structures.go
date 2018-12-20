@@ -212,7 +212,7 @@ var VoteDefinitionGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 			Type: PhasesBlockGraphQLType,
 		},
 		"type": &graphql.Field{
-			Type: graphql.String,
+			Type: graphql.Int,
 		},
 		"config": &graphql.Field{
 			Type: VDConfigGraphQLType,
