@@ -22,6 +22,7 @@ func (s *GraphQLServer) CreateSchema() (graphql.Schema, error) {
 		"result":               s.result(),
 		"results":              s.results(),
 		"identityKeysAtHeight": s.identityKeysAtHeight(),
+		"proposalEntries":      s.proposalEntries(),
 	}
 
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
@@ -32,6 +33,23 @@ func (s *GraphQLServer) CreateSchema() (graphql.Schema, error) {
 	}
 
 	return schema, err
+}
+
+func (s *GraphQLServer) proposalEntries() *graphql.Field {
+	return &graphql.Field{
+		Type:        graphql.NewList(ProposalEntryGraphQLType),
+		Description: "Returns all commits/reveals in a given vote",
+		Args: graphql.FieldConfigArgument{
+			"chain": &graphql.ArgumentConfig{
+				Type:        graphql.NewNonNull(graphql.String),
+				Description: "Proposal chain id",
+			},
+		},
+		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+			chain := params.Args["chain"].(string)
+			return s.SQLDB.FetchProposalEntries(chain)
+		},
+	}
 }
 
 func (s *GraphQLServer) identityKeysAtHeight() *graphql.Field {
@@ -80,7 +98,8 @@ func (s *GraphQLServer) proposal() *graphql.Field {
 		Type: VoteGraphQLType,
 		Args: graphql.FieldConfigArgument{
 			"chain": &graphql.ArgumentConfig{
-				Type: graphql.NewNonNull(graphql.String),
+				Description: "Proposal chain id",
+				Type:        graphql.NewNonNull(graphql.String),
 			},
 		},
 		Resolve: func(params graphql.ResolveParams) (interface{}, error) {

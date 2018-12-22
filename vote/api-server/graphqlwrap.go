@@ -30,6 +30,32 @@ var eligibleVoterRow = "voter_id, eligible_list, weight, entry_hash, block_heigh
 var commitRow = `voter_id, vote_chain, signing_key, signature, commitment, entry_hash, block_height`
 var revealRow = `voter_id, vote_chain, vote, secret, hmac_algo, entry_hash, block_height`
 
+func (g *GraphQLSQLDB) FetchProposalEntries(chainid string) ([]ProposalEntry, error) {
+	query := `
+		SELECT voter_id, entry_hash, TRUE AS commit FROM commits WHERE vote_chain = $1
+		UNION
+		SELECT voter_id, entry_hash, FALSE AS commit FROM reveals WHERE vote_chain = $1
+	`
+
+	rows, err := g.SQLDatabase.DB.Query(query, chainid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var arr []ProposalEntry
+	for rows.Next() {
+		var e ProposalEntry
+		err := rows.Scan(&e.VoterId, &e.EntryHash, &e.Commit)
+		if err != nil {
+			return nil, err
+		}
+
+		arr = append(arr, e)
+	}
+
+	return arr, nil
+}
+
 func (g *GraphQLSQLDB) FetchVote(chainid string) (*Vote, error) {
 	query := fmt.Sprintf(`SELECT %s FROM proposals WHERE chain_id = $1`, voterow)
 	rows, err := g.SQLDatabase.DB.Query(query, chainid)

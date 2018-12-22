@@ -11,6 +11,27 @@ import (
 	"github.com/graphql-go/graphql/language/kinds"
 )
 
+type ProposalEntry struct {
+	VoterId   string `json:"voterId"`
+	EntryHash string `json:"entryHash"`
+	Commit    bool   `json:"commit"`
+}
+
+var ProposalEntryGraphQLType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "ProposalEntry",
+	Description: "A commit or reveal in a proposal",
+	Fields: graphql.Fields{
+		"voterId": &graphql.Field{
+			Type: graphql.String,
+		},
+		"entryHash": &graphql.Field{
+			Type: graphql.String,
+		},
+		"commit": &graphql.Field{
+			Type: graphql.Boolean,
+		},
+	}})
+
 type ListInfo struct {
 	TotalCount int `json:"totalCount"`
 	Offset     int `json:"offset""`
