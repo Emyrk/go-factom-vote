@@ -243,6 +243,7 @@ func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset 
 	title, _ := params["title"].(string)
 	voter, _ := params["voter"].(string)
 	vi, _ := params["voteInitiator"].(string)
+	voteChain, _ := params["voteChain"].(string)
 
 	query := psql.Select(fmt.Sprintf("%s, count(*) OVER() AS full_count", voterow))
 	query = query.From("proposals")
@@ -276,12 +277,16 @@ func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset 
 	}
 
 	if vi != "" {
-		query = query.Where("vote_initiator = ?", vi)
+		query = query.Where("vote_initiator LIKE ?", "%"+vi+"%")
+	}
+
+	if voteChain != "" {
+		query = query.Where("chain_id LIKE ?", "%"+voteChain+"%")
 	}
 
 	if voter != "" {
-		joinQuery := `(SELECT eligible_list FROM eligible_voters WHERE voter_id = ?) AS voter_egs ON eligible_voter_chain = voter_egs.eligible_list`
-		query = query.RightJoin(joinQuery, voter)
+		joinQuery := `(SELECT eligible_list FROM eligible_voters WHERE voter_id LIKE ?) AS voter_egs ON eligible_voter_chain = voter_egs.eligible_list`
+		query = query.RightJoin(joinQuery, "%"+voter+"%")
 	}
 
 	if offset > 0 {

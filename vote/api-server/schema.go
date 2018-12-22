@@ -205,11 +205,15 @@ func (s *GraphQLServer) allProposals() *graphql.Field {
 				Type:        graphql.String,
 			},
 			"voter": &graphql.ArgumentConfig{
-				Description: "Will filter votes that this voter is able to vote in.",
+				Description: "Will filter votes that this voter is able to vote in. Will match partial hashes",
 				Type:        graphql.String,
 			},
 			"voteInitiator": &graphql.ArgumentConfig{
-				Description: "Will filter votes that are created by this identity",
+				Description: "Will filter votes that are created by this identity. Will match partial hashes",
+				Type:        graphql.String,
+			},
+			"voteChain": &graphql.ArgumentConfig{
+				Description: "Will filter votes that have this chainid. Will match partial hashes",
 				Type:        graphql.String,
 			},
 		},
