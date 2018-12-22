@@ -183,10 +183,11 @@ func (s *GraphQLServer) allProposals() *graphql.Field {
 		Type: VoteListGraphQLType,
 		Args: graphql.FieldConfigArgument{
 			"registered": &graphql.ArgumentConfig{
-				Type: graphql.Boolean,
+				Description: "Only show registered votes.",
+				Type:        graphql.Boolean,
 			},
 			"active": &graphql.ArgumentConfig{
-				Description: "Any vote that is in discussion, commit, or reveal phase.",
+				Description: "Any vote that is in discussion, commit, or reveal phase. Overriden by 'status' if provided",
 				Type:        graphql.Boolean,
 			},
 			"offset": &graphql.ArgumentConfig{
@@ -203,14 +204,16 @@ func (s *GraphQLServer) allProposals() *graphql.Field {
 				Description: "Allows for filtering by title. If a title is given, any title that contains the given string will be returned.",
 				Type:        graphql.String,
 			},
+			"voter": &graphql.ArgumentConfig{
+				Description: "Will filter votes that this voter is able to vote in.",
+				Type:        graphql.String,
+			},
 		},
 		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 			reg, ok := params.Args["registered"].(bool)
 			act, _ := params.Args["active"].(bool)
 			offset, _ := params.Args["offset"].(int)
 			limit, _ := params.Args["limit"].(int)
-			status, _ := params.Args["status"].(string)
-			title, _ := params.Args["title"].(string)
 
 			regNumber := 0
 			if ok {
@@ -220,7 +223,8 @@ func (s *GraphQLServer) allProposals() *graphql.Field {
 					regNumber = 2
 				}
 			}
-			return s.SQLDB.FetchAllVotes(regNumber, act, limit, offset, status, title)
+
+			return s.SQLDB.FetchAllVotes(regNumber, act, limit, offset, params.Args)
 		},
 	}
 }

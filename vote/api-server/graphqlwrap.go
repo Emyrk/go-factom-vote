@@ -237,8 +237,12 @@ func scanVoteResults(rows *sql.Rows, v *common.VoteStats, extra []interface{}) e
 	return err
 }
 
-func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset int, status string, title string) (*VoteList, error) {
-	var args []interface{}
+func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset int, params map[string]interface{}) (*VoteList, error) {
+	//var args []interface{}
+	status, _ := params["status"].(string)
+	title, _ := params["title"].(string)
+	voter, _ := params["voter"].(string)
+
 	query := psql.Select(fmt.Sprintf("%s, count(*) OVER() AS full_count", voterow))
 	query = query.From("proposals")
 	switch registered {
@@ -266,8 +270,18 @@ func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset 
 	}
 
 	if title != "" {
-		query = query.Where("title LIKE ?")
-		args = append(args, "%"+title+"%")
+		query = query.Where("title LIKE ?", "%"+title+"%")
+		//args = append(args, "%"+title+"%")
+	}
+
+	if voter != "" {
+		joinQuery := `(SELECT eligible_list FROM eligible_voters WHERE voter_id = ?) AS voter_egs ON eligible_voter_chain = voter_egs.eligible_list`
+		query = query.RightJoin(joinQuery, voter)
+
+		//RIGHT JOIN
+		//(SELECT eligible_list FROM eligible_voters WHERE voter_id = '2d98021e3cf71580102224b2fcb4c5c60595e8fdf6fd1b97c6ef63e9fb3ed635') AS voter_egs
+		//ON eligible_voter_chain = voter_egs.eligible_list;
+
 	}
 
 	if offset > 0 {
@@ -278,7 +292,7 @@ func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset 
 		query = query.Limit(uint64(limit))
 	}
 
-	q, _, err := query.ToSql()
+	q, args, err := query.ToSql()
 	if err != nil {
 		return nil, err
 	}
