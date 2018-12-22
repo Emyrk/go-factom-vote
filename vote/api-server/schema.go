@@ -208,6 +208,10 @@ func (s *GraphQLServer) allProposals() *graphql.Field {
 				Description: "Will filter votes that this voter is able to vote in.",
 				Type:        graphql.String,
 			},
+			"voteInitiator": &graphql.ArgumentConfig{
+				Description: "Will filter votes that are created by this identity",
+				Type:        graphql.String,
+			},
 		},
 		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 			reg, ok := params.Args["registered"].(bool)
