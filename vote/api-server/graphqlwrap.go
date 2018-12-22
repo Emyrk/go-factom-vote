@@ -301,7 +301,6 @@ func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset 
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(q)
 
 	rows, err := g.SQLDatabase.DB.Query(q, args...)
 	if err != nil {
