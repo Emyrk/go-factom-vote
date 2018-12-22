@@ -197,15 +197,11 @@ func (s *GraphQLServer) allProposals() *graphql.Field {
 			},
 			"status": &graphql.ArgumentConfig{
 				Description: "Options include: 'discussion', 'commit', 'reveal', or 'complete'.",
-				/*
-
-									-Discussion Phase [current block < commitStart] (alt. named Pre-Commit Phase)
-					-Commit Phase [commitStart <= current block < commitEnd]
-					-Reveal Phase [revealStart <= current block < revealEnd]
-					-Complete [current block >= revealEnd]
-					-Invalidated  [current block >= revealEnd && vote result == invalid]
-				*/
-				Type: graphql.String,
+				Type:        graphql.String,
+			},
+			"title": &graphql.ArgumentConfig{
+				Description: "Allows for filtering by title. If a title is given, any title that contains the given string will be returned.",
+				Type:        graphql.String,
 			},
 		},
 		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
@@ -214,6 +210,7 @@ func (s *GraphQLServer) allProposals() *graphql.Field {
 			offset, _ := params.Args["offset"].(int)
 			limit, _ := params.Args["limit"].(int)
 			status, _ := params.Args["status"].(string)
+			title, _ := params.Args["title"].(string)
 
 			regNumber := 0
 			if ok {
@@ -223,7 +220,7 @@ func (s *GraphQLServer) allProposals() *graphql.Field {
 					regNumber = 2
 				}
 			}
-			return s.SQLDB.FetchAllVotes(regNumber, act, limit, offset, status)
+			return s.SQLDB.FetchAllVotes(regNumber, act, limit, offset, status, title)
 		},
 	}
 }

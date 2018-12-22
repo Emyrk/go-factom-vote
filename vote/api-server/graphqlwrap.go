@@ -237,7 +237,8 @@ func scanVoteResults(rows *sql.Rows, v *common.VoteStats, extra []interface{}) e
 	return err
 }
 
-func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset int, status string) (*VoteList, error) {
+func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset int, status string, title string) (*VoteList, error) {
+	var args []interface{}
 	query := psql.Select(fmt.Sprintf("%s, count(*) OVER() AS full_count", voterow))
 	query = query.From("proposals")
 	switch registered {
@@ -264,6 +265,11 @@ func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset 
 		query = query.Where("reveal_stop <= (SELECT max(block_height) FROM completed)")
 	}
 
+	if title != "" {
+		query = query.Where("title LIKE ?")
+		args = append(args, "%"+title+"%")
+	}
+
 	if offset > 0 {
 		query = query.Offset(uint64(offset))
 	}
@@ -276,8 +282,9 @@ func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset 
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(q)
 
-	rows, err := g.SQLDatabase.DB.Query(q)
+	rows, err := g.SQLDatabase.DB.Query(q, args...)
 	if err != nil {
 		return nil, err
 	}
