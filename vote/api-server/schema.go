@@ -56,19 +56,12 @@ func (s *GraphQLServer) identityKeysAtHeight() *graphql.Field {
 				height = int(heights.EntryHeight)
 			}
 
-			id := &factom.Identity{}
-			id.ChainID = chain
-			keys, err := id.GetKeysAtHeight(int64(height))
+			keys, err := factom.GetActiveIdentityKeysAtHeight(chain, int64(height))
 			if err != nil {
 				return nil, err
 			}
 
-			var arr []string
-			for _, k := range keys {
-				arr = append(arr, k.PubString())
-			}
-
-			return arr, nil
+			return keys, nil
 		},
 	}
 }
@@ -193,7 +186,8 @@ func (s *GraphQLServer) allProposals() *graphql.Field {
 				Type: graphql.Boolean,
 			},
 			"active": &graphql.ArgumentConfig{
-				Type: graphql.Boolean,
+				Description: "Any vote that is in discussion, commit, or reveal phase.",
+				Type:        graphql.Boolean,
 			},
 			"offset": &graphql.ArgumentConfig{
 				Type: graphql.Int,
@@ -201,12 +195,25 @@ func (s *GraphQLServer) allProposals() *graphql.Field {
 			"limit": &graphql.ArgumentConfig{
 				Type: graphql.Int,
 			},
+			"status": &graphql.ArgumentConfig{
+				Description: "Options include: 'discussion', 'commit', 'reveal', or 'complete'.",
+				/*
+
+									-Discussion Phase [current block < commitStart] (alt. named Pre-Commit Phase)
+					-Commit Phase [commitStart <= current block < commitEnd]
+					-Reveal Phase [revealStart <= current block < revealEnd]
+					-Complete [current block >= revealEnd]
+					-Invalidated  [current block >= revealEnd && vote result == invalid]
+				*/
+				Type: graphql.String,
+			},
 		},
 		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 			reg, ok := params.Args["registered"].(bool)
 			act, _ := params.Args["active"].(bool)
 			offset, _ := params.Args["offset"].(int)
 			limit, _ := params.Args["limit"].(int)
+			status, _ := params.Args["status"].(string)
 
 			regNumber := 0
 			if ok {
@@ -216,7 +223,7 @@ func (s *GraphQLServer) allProposals() *graphql.Field {
 					regNumber = 2
 				}
 			}
-			return s.SQLDB.FetchAllVotes(regNumber, act, limit, offset)
+			return s.SQLDB.FetchAllVotes(regNumber, act, limit, offset, status)
 		},
 	}
 }

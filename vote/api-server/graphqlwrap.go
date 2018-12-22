@@ -11,6 +11,7 @@ import (
 
 	"github.com/Emyrk/go-factom-vote/vote/common"
 	"github.com/Emyrk/go-factom-vote/vote/database"
+	sq "github.com/Masterminds/squirrel"
 )
 
 var noextra []interface{}
@@ -19,6 +20,8 @@ var noextra []interface{}
 type GraphQLSQLDB struct {
 	*database.SQLDatabase
 }
+
+var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
 var voterow = "vote_initiator, signing_key, signature, title, description, external_href, external_hash, external_hash_algo, commit_start, commit_stop, reveal_start, reveal_stop, eligible_voter_chain, vote_type, vote_options, vote_allow_abstain, vote_compute_results_against, vote_min_options, vote_max_options, vote_accept_criteria, vote_winner_criteria, chain_id, entry_hash, block_height, registered, complete"
 
@@ -234,35 +237,47 @@ func scanVoteResults(rows *sql.Rows, v *common.VoteStats, extra []interface{}) e
 	return err
 }
 
-func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset int) (*VoteList, error) {
-	query := fmt.Sprintf(`SELECT %s, count(*) OVER() AS full_count FROM proposals`, voterow)
+func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset int, status string) (*VoteList, error) {
+	query := psql.Select(fmt.Sprintf("%s, count(*) OVER() AS full_count", voterow))
+	query = query.From("proposals")
+	switch registered {
+	case 1:
+		query = query.Where("registered = TRUE")
+	case 2:
+		query = query.Where("registered = FALSE")
+	}
 
-	where := ""
-	if registered > 0 || active {
-		where = " WHERE "
+	// If status is set, then we apply a different height filter
+	if active && status == "" {
+		query = query.Where("reveal_stop > (SELECT max(block_height) FROM completed)")
 	}
-	if registered == 1 {
-		where += " registered = TRUE "
-	} else if registered == 2 {
-		where += " registered = FALSE "
+	switch strings.ToLower(status) {
+	case "discussion":
+		query = query.Where("(SELECT max(block_height) FROM completed) < commit_start")
+	case "commit":
+		query = query.Where("commit_start <= (SELECT max(block_height) FROM completed)")
+		query = query.Where("(SELECT max(block_height) FROM completed) < commit_stop")
+	case "reveal":
+		query = query.Where("reveal_start <= (SELECT max(block_height) FROM completed)")
+		query = query.Where("(SELECT max(block_height) FROM completed) < reveal_stop")
+	case "complete":
+		query = query.Where("reveal_stop <= (SELECT max(block_height) FROM completed)")
 	}
-	if registered > 0 && active {
-		where += " AND "
-	}
-	if active {
-		where += " reveal_stop > (SELECT max(block_height) FROM completed)"
-	}
-	query += where
 
 	if offset > 0 {
-		query += fmt.Sprintf(" OFFSET %d", offset)
+		query = query.Offset(uint64(offset))
 	}
 
 	if limit > 0 {
-		query += fmt.Sprintf(" LIMIT %d", limit)
+		query = query.Limit(uint64(limit))
 	}
 
-	rows, err := g.SQLDatabase.DB.Query(query)
+	q, _, err := query.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := g.SQLDatabase.DB.Query(q)
 	if err != nil {
 		return nil, err
 	}

@@ -75,6 +75,7 @@ type VoteAdmin struct {
 	AdminBlockHeight int    `json:"blockHeight"`
 	Registered       bool   `json:"registered"`
 	Complete         bool   `json:"complete"`
+	Status           string `json:"status"`
 
 	// Other
 	//VoteInfo struct {

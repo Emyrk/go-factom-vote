@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 
 	. "github.com/Emyrk/go-factom-vote/vote/common"
+	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
 	"github.com/FactomProject/factomd/common/interfaces"
 )
@@ -118,15 +119,15 @@ func (vw *VoteWatcher) AddEligibleVoter(voter *EligibleVoterEntry, hash [32]byte
 
 func (vw *VoteWatcher) addVoter(voter *EligibleVoter, tx *sql.Tx) error {
 	// Must get all the voting keys for this voter
-	id := &factom.Identity{}
-	id.ChainID = voter.VoterID.String()
-	keys, err := id.GetKeysAtHeight(int64(voter.BlockHeight))
+	keys, err := factom.GetActiveIdentityKeysAtHeight(voter.VoterID.String(), int64(voter.BlockHeight))
 	if err != nil {
 		return err
 	}
 
 	for _, k := range keys {
-		voter.SigningKeys = append(voter.SigningKeys, fmt.Sprintf("%x", k.Pub[:]))
+		bytes := base58.Decode(k)
+		pubkey := bytes[factom.IDKeyPrefixLength:factom.IDKeyBodyLength]
+		voter.SigningKeys = append(voter.SigningKeys, fmt.Sprintf("%x", pubkey))
 	}
 
 	return vw.SQLDB.InsertGenericTX(voter, tx)

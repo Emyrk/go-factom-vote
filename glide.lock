@@ -1,5 +1,5 @@
 hash: 0838756f09d6f810bb3759298f5192408ffd194873655f24dbd6d70181898bec
-updated: 2018-11-16T21:13:04.704654318-05:00
+updated: 2018-12-21T14:28:17.311430738-05:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -27,7 +27,7 @@ imports:
   subpackages:
   - edwards25519
 - name: github.com/FactomProject/factom
-  version: 96b5658f4fbd78bf664b5c6848d02e765d877b05
+  version: cd76b2e7763e402d2042a984e5cce883d7e51ffa
 - name: github.com/FactomProject/factomd
   version: e502c6e9817b3502cf9c9122a2e1b33e5fc0fc9f
   subpackages:
@@ -100,10 +100,16 @@ imports:
   - language/visitor
 - name: github.com/graphql-go/handler
   version: 28550b403f666810d217c1890a1bfde8a3297494
+- name: github.com/lann/builder
+  version: 47ae307949d02aa1f1069fdafc00ca08e1dbabac
+- name: github.com/lann/ps
+  version: 62de8c46ede02a7675c4c79c84883eb164cb71e3
 - name: github.com/lib/pq
   version: 88edab0803230a3898347e77b474f8c1820a1f20
   subpackages:
   - oid
+- name: github.com/Masterminds/squirrel
+  version: b56af2301db7bc17c0b561554a71e97b492dd172
 - name: github.com/matttproud/golang_protobuf_extensions
   version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
@@ -129,22 +135,22 @@ imports:
 - name: github.com/sirupsen/logrus
   version: 89742aefa4b206dcf400792f3bd35b542998eb3b
 - name: golang.org/x/crypto
-  version: 614d502a4dac94afa3a6ce146bd1736da82514c6
+  version: 9419663f5a44be8b34ca85f08abc5fe1be11f8a3
   subpackages:
   - pbkdf2
   - ripemd160
   - ssh/terminal
 - name: golang.org/x/sys
-  version: 1a700e749ce29638d0bbcb531cce1094ea096bd3
+  version: 8dbc5d05d6edcc104950cc299a1ce6641235bc86
   subpackages:
   - unix
   - windows
 - name: gopkg.in/gcfg.v1
-  version: 61b2c08bc8f6068f7c5ca684372f9a6cb1c45ebe
+  version: 298b7a6a3838f79debfaee8bd3bfb2b8d779e756
   subpackages:
   - scanner
   - token
   - types
 - name: gopkg.in/warnings.v0
-  version: ec4a0fea49c7b46c2aeb0b51aac55779c607e52b
+  version: 8a331561fe74dadba6edfc59f3be66c22c3b065d
 testImports: []
