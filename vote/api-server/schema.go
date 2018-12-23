@@ -235,6 +235,14 @@ func (s *GraphQLServer) allProposals() *graphql.Field {
 				Description: "Will filter votes that have this chainid. Will match partial hashes",
 				Type:        graphql.String,
 			},
+			"sort": &graphql.ArgumentConfig{
+				Description: "Can sort by given column.",
+				Type:        graphql.String,
+			},
+			"sortOrder": &graphql.ArgumentConfig{
+				Description: "Can set the sort to ASC or DESC",
+				Type:        graphql.String,
+			},
 		},
 		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 			reg, ok := params.Args["registered"].(bool)

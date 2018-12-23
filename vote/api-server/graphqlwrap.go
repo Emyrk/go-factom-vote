@@ -263,6 +263,17 @@ func scanVoteResults(rows *sql.Rows, v *common.VoteStats, extra []interface{}) e
 	return err
 }
 
+// Key is graphql value, value is the postgres column
+var validSortOptions = map[string]string{
+	"title":         "title",
+	"commitStart":   "commit_start",
+	"commitEnd":     "commit_stop",
+	"revealStart":   "reveal_start",
+	"revealEnd":     "reveal_stop",
+	"voteInitiator": "vote_initiator",
+	"chainId":       "chain_id",
+}
+
 func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset int, params map[string]interface{}) (*VoteList, error) {
 	//var args []interface{}
 	status, _ := params["status"].(string)
@@ -270,6 +281,8 @@ func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset 
 	voter, _ := params["voter"].(string)
 	vi, _ := params["voteInitiator"].(string)
 	voteChain, _ := params["voteChain"].(string)
+	sort, _ := params["sort"].(string)
+	sortOrder, _ := params["sortOrder"].(string)
 
 	query := psql.Select(fmt.Sprintf("%s, count(*) OVER() AS full_count", voterow))
 	query = query.From("proposals")
@@ -308,6 +321,22 @@ func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset 
 
 	if voteChain != "" {
 		query = query.Where("chain_id LIKE ?", "%"+voteChain+"%")
+	}
+
+	if sort != "" {
+		col, ok := validSortOptions[sort]
+		if ok {
+			if sortOrder != "DESC" {
+				sortOrder = "ASC"
+			}
+			query = query.OrderBy(col + " " + sortOrder)
+		} else {
+			valid := []string{}
+			for k, _ := range validSortOptions {
+				valid = append(valid, k)
+			}
+			return nil, fmt.Errorf("'%s' is not a valid sorting option. Options: %v", sort, valid)
+		}
 	}
 
 	if voter != "" {
