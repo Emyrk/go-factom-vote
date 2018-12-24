@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 
 	"github.com/Emyrk/go-factom-vote/vote/common"
-	"github.com/FactomProject/factomd/common/interfaces"
 )
 
 func (db *SQLDatabase) InsertGenericTX(o common.ISQLObject, tx *sql.Tx) error {
@@ -31,9 +30,9 @@ func (db *SQLDatabase) InsertGeneric(o common.ISQLObject) error {
 	return err
 }
 
-func (db *SQLDatabase) SetRegistered(vote interfaces.IHash, registered bool) error {
+func (db *SQLDatabase) SetRegistered(vote string, registered bool) error {
 	query := `UPDATE proposals SET registered = $2 WHERE chain_id = $1;`
-	_, err := db.DB.Exec(query, vote.String(), registered)
+	_, err := db.DB.Exec(query, vote, registered)
 	return err
 }
 

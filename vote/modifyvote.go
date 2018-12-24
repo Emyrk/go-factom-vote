@@ -12,7 +12,6 @@ import (
 	. "github.com/Emyrk/go-factom-vote/vote/common"
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
-	"github.com/FactomProject/factomd/common/interfaces"
 )
 
 // All vote modifications go through here
@@ -54,7 +53,7 @@ func (vw *VoteWatcher) AddCommit(c VoteCommit, height uint32) error {
 	return nil
 }
 
-func (vw *VoteWatcher) SetRegistered(chain interfaces.IHash, registered bool) error {
+func (vw *VoteWatcher) SetRegistered(chain string, registered bool) error {
 	return vw.SQLDB.SetRegistered(chain, registered)
 }
 

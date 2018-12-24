@@ -308,7 +308,16 @@ func (vw *VoteWatcher) ProcessVoteRegister(entry interfaces.IEBEntry,
 	dBlockTimestamp time.Time,
 	newEntry bool) (bool, bool, error) {
 
-	exists, err := vw.SQLDB.IsVoteExist(entry.GetChainID().String())
+	if len(entry.ExternalIDs()) != 2 {
+		return false, false, fmt.Errorf("Incorrect number of extids")
+	}
+
+	votechain := hex.EncodeToString(entry.ExternalIDs()[1])
+	if len(votechain) != 64 {
+		return false, false, fmt.Errorf("Incorrect number of bytes for chainid")
+	}
+
+	exists, err := vw.SQLDB.IsVoteExist(votechain)
 	if !exists {
 		return false, true, fmt.Errorf("vote chain does not exist to be registered")
 	}
@@ -317,7 +326,7 @@ func (vw *VoteWatcher) ProcessVoteRegister(entry interfaces.IEBEntry,
 		return false, true, err
 	}
 
-	err = vw.SetRegistered(entry.GetChainID(), true)
+	err = vw.SetRegistered(votechain, true)
 	if err != nil {
 		return false, true, err
 	}
