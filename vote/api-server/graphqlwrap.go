@@ -272,6 +272,7 @@ var validSortOptions = map[string]string{
 	"revealEnd":     "reveal_stop",
 	"voteInitiator": "vote_initiator",
 	"chainId":       "chain_id",
+	"blockHeight":   "block_height",
 }
 
 func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset int, params map[string]interface{}) (*VoteList, error) {
