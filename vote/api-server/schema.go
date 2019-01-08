@@ -236,11 +236,11 @@ func (s *GraphQLServer) allProposals() *graphql.Field {
 				Type:        graphql.String,
 			},
 			"sort": &graphql.ArgumentConfig{
-				Description: "Can sort by given column.",
+				Description: "Can sort by given column. Can provide multiple columns comma separated.",
 				Type:        graphql.String,
 			},
 			"sortOrder": &graphql.ArgumentConfig{
-				Description: "Can set the sort to ASC or DESC",
+				Description: "Can set the sort to ASC or DESC. Default is DESC if not provided",
 				Type:        graphql.String,
 			},
 		},

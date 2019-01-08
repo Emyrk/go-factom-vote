@@ -325,18 +325,26 @@ func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset 
 	}
 
 	if sort != "" {
-		col, ok := validSortOptions[sort]
-		if ok {
-			if sortOrder != "DESC" {
-				sortOrder = "ASC"
+		sortCols := strings.Split(sort, ",")
+		orders := strings.Split(sortOrder, ",")
+		orders = append(orders, make([]string, len(sortCols)-len(orders))...)
+		for i, s := range sortCols {
+			s = strings.Replace(s, " ", "", -1)
+			col, ok := validSortOptions[s]
+
+			if ok {
+				o := strings.Replace(orders[i], " ", "", -1)
+				if o != "ASC" {
+					orders[i] = "DESC"
+				}
+				query = query.OrderBy(col + " " + o)
+			} else {
+				valid := []string{}
+				for k, _ := range validSortOptions {
+					valid = append(valid, k)
+				}
+				return nil, fmt.Errorf("'%s' is not a valid sorting option. Options: %v", sort, valid)
 			}
-			query = query.OrderBy(col + " " + sortOrder)
-		} else {
-			valid := []string{}
-			for k, _ := range validSortOptions {
-				valid = append(valid, k)
-			}
-			return nil, fmt.Errorf("'%s' is not a valid sorting option. Options: %v", sort, valid)
 		}
 	}
 
