@@ -5,6 +5,8 @@ import (
 
 	"fmt"
 
+	"database/sql"
+
 	"github.com/Emyrk/go-factom-vote/vote/common"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
@@ -12,9 +14,16 @@ import (
 )
 
 type ProposalEntry struct {
-	VoterId   string `json:"voterId"`
-	EntryHash string `json:"entryHash"`
-	Commit    bool   `json:"commit"`
+	VoterId string `json:"voterId"`
+	// These can be null
+	Commit sql.NullString `json:"commit"`
+	Reveal sql.NullString `json:"reveal"`
+}
+
+func NewProposalEntry() *ProposalEntry {
+	p := new(ProposalEntry)
+
+	return p
 }
 
 var ProposalEntryGraphQLType = graphql.NewObject(graphql.ObjectConfig{
@@ -24,11 +33,35 @@ var ProposalEntryGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		"voterId": &graphql.Field{
 			Type: graphql.String,
 		},
-		"entryHash": &graphql.Field{
-			Type: graphql.String,
-		},
 		"commit": &graphql.Field{
-			Type: graphql.Boolean,
+			Type: graphql.String,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				ent, ok := p.Source.(ProposalEntry)
+				if !ok {
+					return nil, fmt.Errorf("Incorrect type supplied")
+				}
+
+				str := ent.Commit
+				if str.Valid {
+					return str.String, nil
+				}
+				return nil, nil
+			},
+		},
+		"reveal": &graphql.Field{
+			Type: graphql.String,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				ent, ok := p.Source.(ProposalEntry)
+				if !ok {
+					return nil, fmt.Errorf("Incorrect type supplied")
+				}
+
+				str := ent.Reveal
+				if str.Valid {
+					return str.String, nil
+				}
+				return nil, nil
+			},
 		},
 	}})
 
