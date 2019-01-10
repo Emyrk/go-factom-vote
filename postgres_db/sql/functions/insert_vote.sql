@@ -22,7 +22,8 @@ CREATE OR REPLACE FUNCTION insert_vote(
   param_vote_winner_criteria VARCHAR,
   param_chain_id char(64),
   param_entry_hash CHAR(64),
-  param_block_height INTEGER)
+  param_block_height INTEGER,
+  param_protocol_version INTEGER)
   RETURNS INTEGER AS $$
 BEGIN
 
@@ -56,6 +57,7 @@ BEGIN
      chain_id,
      entry_hash,
      block_height,
+     protocol_version,
      registered)
     VALUES(param_vote_initiator,
       param_signing_key,
@@ -80,6 +82,7 @@ BEGIN
       param_vote_winner_criteria,
       param_chain_id,
       param_entry_hash,
+      param_protocol_version,
       param_block_height,
       FALSE);
     RETURN 1;

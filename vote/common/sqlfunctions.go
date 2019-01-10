@@ -50,6 +50,7 @@ func (v *Vote) ScanRow(row SQLRowWithScan) (*Vote, error) {
 		&chain,
 		&entry,
 		&v.Proposal.BlockHeight,
+		&v.Proposal.ProtocolVersion,
 	)
 	if err != nil {
 		return nil, err
@@ -104,7 +105,8 @@ func (v Vote) SelectRows() string {
 			vote_winner_criteria,
 			chain_id,
 			entry_hash,
-			block_height`
+			block_height,
+			protocol_version`
 }
 
 func (v *Vote) RowValuePointers() []interface{} {
@@ -147,7 +149,8 @@ func (v *Vote) RowValuePointers() []interface{} {
 		&winnerCriteria,
 		&chain,
 		&eHash,
-		&v.Proposal.BlockHeight}
+		&v.Proposal.BlockHeight,
+		&v.Proposal.ProtocolVersion}
 }
 
 // Commit

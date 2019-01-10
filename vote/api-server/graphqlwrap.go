@@ -23,7 +23,7 @@ type GraphQLSQLDB struct {
 
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
-var voterow = "vote_initiator, signing_key, signature, title, description, external_href, external_hash, external_hash_algo, commit_start, commit_stop, reveal_start, reveal_stop, eligible_voter_chain, vote_type, vote_options, vote_allow_abstain, vote_compute_results_against, vote_min_options, vote_max_options, vote_accept_criteria, vote_winner_criteria, chain_id, entry_hash, block_height, registered, complete"
+var voterow = "vote_initiator, signing_key, signature, title, description, external_href, external_hash, external_hash_algo, commit_start, commit_stop, reveal_start, reveal_stop, eligible_voter_chain, vote_type, vote_options, vote_allow_abstain, vote_compute_results_against, vote_min_options, vote_max_options, vote_accept_criteria, vote_winner_criteria, chain_id, entry_hash, block_height, registered, complete, protocol_version"
 
 var eligibleListRow = "chain_id, vote_initiator, nonce, initiator_key, initiator_signature"
 var eligibleVoterRow = "voter_id, eligible_list, weight, entry_hash, block_height, signing_keys"
@@ -429,6 +429,7 @@ func scanVote(rows *sql.Rows, v *Vote, extra []interface{}) error {
 		&v.Admin.AdminBlockHeight,
 		&v.Admin.Registered,
 		&v.Admin.Complete,
+		&v.Admin.ProtocolVersion,
 	}
 
 	arr = append(arr, extra...)

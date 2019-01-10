@@ -97,6 +97,7 @@ type VoteAdmin struct {
 	Registered       bool   `json:"registered"`
 	Complete         bool   `json:"complete"`
 	Status           string `json:"status"`
+	ProtocolVersion  int    `json:"protocolVersion"`
 
 	// Other
 	//VoteInfo struct {
@@ -169,6 +170,9 @@ var VoteAdminGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"complete": &graphql.Field{
 			Type: graphql.Boolean,
+		},
+		"protocolVersion": &graphql.Field{
+			Type: graphql.Int,
 		},
 		//"voteInfo": &graphql.Field{
 		//	Type: VAVoteInfoGraphQLType,

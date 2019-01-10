@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 
@@ -40,7 +41,7 @@ func NewProposalEntry(entry interfaces.IEBEntry, dbheight int) (*ProposalEntry, 
 
 	p := new(ProposalEntry)
 	p.ProposalChain = entry.GetChainID()
-	p.ProtocolVersion = 0 // TODO: Parse protocol version
+	p.ProtocolVersion = int(binary.BigEndian.Uint16(entry.ExternalIDs()[1]))
 	p.VoteInitiator = new(primitives.Hash)
 	p.VoteInitiator.SetBytes(entry.ExternalIDs()[2]) // = hash
 	err := p.InitiatorKey.UnmarshalBinary(entry.ExternalIDs()[3])
