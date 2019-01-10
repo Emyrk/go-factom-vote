@@ -82,8 +82,8 @@ BEGIN
       param_vote_winner_criteria,
       param_chain_id,
       param_entry_hash,
-      param_protocol_version,
       param_block_height,
+      param_protocol_version,
       FALSE);
     RETURN 1;
   end if;

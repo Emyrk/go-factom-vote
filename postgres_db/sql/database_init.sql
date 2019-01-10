@@ -118,6 +118,10 @@ create table eligible_voters
 )
 ;
 
+create index eligible_voters_eligiblelist_index
+  on eligible_voters (eligible_list)
+;
+
 create index eligible_voters_block_height_index
   on eligible_voters (block_height)
 ;
@@ -474,12 +478,27 @@ BEGIN
       param_vote_winner_criteria,
            param_chain_id,
            param_entry_hash,
-           param_protocol_version,
            param_block_height,
+           param_protocol_version,
            FALSE);
     RETURN 1;
   end if;
   RETURN -1;
+END;
+$$
+;
+
+create function fetch_eligible_voters(param_eligible_list character, param_block_height integer) returns TABLE(voter_id character, eligible_list character, weight double precision, entry_hash character, block_height integer, signing_keys character varying, full_count bigint)
+language plpgsql
+as $$
+BEGIN
+  RETURN QUERY SELECT eligible_voters.voter_id, eligible_voters.eligible_list, eligible_voters.weight,
+                 eligible_voters.entry_hash, eligible_voters.block_height, eligible_voters.signing_keys, count(*) OVER() AS full_count
+               FROM eligible_voters
+                 RIGHT JOIN
+                 (SELECT eligible_voters.voter_id, max(eligible_voters.block_height) AS block_height FROM eligible_voters WHERE
+                   eligible_voters.eligible_list = param_eligible_list AND eligible_voters.block_height < param_block_height GROUP BY (eligible_voters.voter_id)) AS maximums
+                   ON eligible_voters.voter_id = maximums.voter_id AND eligible_voters.block_height = maximums.block_height WHERE eligible_voters.eligible_list = param_eligible_list;
 END;
 $$
 ;
