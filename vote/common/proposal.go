@@ -41,7 +41,10 @@ func NewProposalEntry(entry interfaces.IEBEntry, dbheight int) (*ProposalEntry, 
 
 	p := new(ProposalEntry)
 	p.ProposalChain = entry.GetChainID()
-	p.ProtocolVersion = int(binary.BigEndian.Uint16(entry.ExternalIDs()[1]))
+	v := make([]byte, 4)
+	copy(v[len(v)-len(entry.ExternalIDs()[1]):], entry.ExternalIDs()[1])
+
+	p.ProtocolVersion = int(binary.BigEndian.Uint32(v))
 	p.VoteInitiator = new(primitives.Hash)
 	p.VoteInitiator.SetBytes(entry.ExternalIDs()[2]) // = hash
 	err := p.InitiatorKey.UnmarshalBinary(entry.ExternalIDs()[3])
@@ -64,6 +67,10 @@ func NewProposalEntry(entry interfaces.IEBEntry, dbheight int) (*ProposalEntry, 
 	err = json.Unmarshal(entry.GetContent(), p)
 	if err != nil {
 		return nil, err
+	}
+
+	if p.Vote.PhasesBlockHeights.RevealStart == 0 {
+		p.Vote.PhasesBlockHeights.RevealStart = p.Vote.PhasesBlockHeights.CommitEnd + 1
 	}
 
 	p.EntryHash.SetBytes(entry.GetHash().Bytes())
