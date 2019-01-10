@@ -321,12 +321,16 @@ func (g *GraphQLServer) eligibleListVoters() *graphql.Field {
 			"limit": &graphql.ArgumentConfig{
 				Type: graphql.Int,
 			},
+			"blockHeight": &graphql.ArgumentConfig{
+				Type: graphql.Int,
+			},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			chainid := p.Args["chain"].(string)
 			offset, _ := p.Args["offset"].(int)
 			limit, _ := p.Args["limit"].(int)
-			return g.SQLDB.FetchEligibleVoters(chainid, limit, offset)
+			blockHeight, _ := p.Args["blockHeight"].(int)
+			return g.SQLDB.FetchEligibleVoters(chainid, blockHeight, limit, offset)
 		},
 	}
 }

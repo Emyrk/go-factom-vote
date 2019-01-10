@@ -166,7 +166,7 @@ func (g *GraphQLSQLDB) FetchEligibleList(chainid string) (*EligibleList, error) 
 	return e, nil
 }
 
-func (g *GraphQLSQLDB) FetchEligibleVoters(chainid string, limit, offset int) (*EligibleVoterContainer, error) {
+func (g *GraphQLSQLDB) FetchEligibleVoters(chainid string, blockHeight, limit, offset int) (*EligibleVoterContainer, error) {
 	//query := fmt.Sprintf(`
 	//SELECT eligible_voters.voter_id, eligible_list, weight, entry_hash, eligible_voters.block_height, signing_keys, count(*) OVER() AS full_count
 	//FROM eligible_voters
@@ -178,6 +178,10 @@ func (g *GraphQLSQLDB) FetchEligibleVoters(chainid string, limit, offset int) (*
 		SELECT voter_id, eligible_list, weight, entry_hash, block_height, signing_keys, full_count 
 		FROM fetch_eligible_voters($1, $2)`)
 
+	if blockHeight == 0 {
+		blockHeight = 9999999
+	}
+
 	if offset > 0 {
 		query += fmt.Sprintf(" OFFSET %d", offset)
 	}
@@ -186,7 +190,7 @@ func (g *GraphQLSQLDB) FetchEligibleVoters(chainid string, limit, offset int) (*
 		query += fmt.Sprintf(" LIMIT %d", limit)
 	}
 
-	rows, err := g.SQLDatabase.DB.Query(query, chainid, 9999999)
+	rows, err := g.SQLDatabase.DB.Query(query, chainid, blockHeight)
 	if err != nil {
 		return nil, err
 	}
