@@ -118,7 +118,7 @@ type ExternalReference struct {
 	Hash struct {
 		Value string `json:"value"`
 		Algo  string `json:"algo"`
-	}
+	} `json:"hash"`
 }
 
 type VoteDefinition struct {
