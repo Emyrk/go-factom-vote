@@ -169,14 +169,16 @@ func (g *GraphQLSQLDB) FetchEligibleList(chainid string) (*EligibleList, error) 
 }
 
 func (g *GraphQLSQLDB) FetchEligibleVoters(chainid string, limit, offset int) (*EligibleVoterContainer, error) {
-	//query := fmt.Sprintf("SELECT %s, count(*) OVER() AS full_count FROM eligible_voters WHERE eligible_list = $1", eligibleVoterRow)
+	//query := fmt.Sprintf(`
+	//SELECT eligible_voters.voter_id, eligible_list, weight, entry_hash, eligible_voters.block_height, signing_keys, count(*) OVER() AS full_count
+	//FROM eligible_voters
+	//RIGHT JOIN
+	//(SELECT voter_id, max(block_height) AS block_height FROM eligible_voters WHERE
+	//eligible_list = $1 AND block_height < $2 GROUP BY (voter_id)) AS maximums
+	//ON eligible_voters.voter_id = maximums.voter_id AND eligible_voters.block_height = maximums.block_height WHERE eligible_list = $1`)
 	query := fmt.Sprintf(`
-	SELECT eligible_voters.voter_id, eligible_list, weight, entry_hash, eligible_voters.block_height, signing_keys, count(*) OVER() AS full_count
-	FROM eligible_voters
-	RIGHT JOIN
-	(SELECT voter_id, max(block_height) AS block_height FROM eligible_voters WHERE
-    	eligible_list = $1 AND block_height < $2 GROUP BY (voter_id)) AS maximums
-	ON eligible_voters.voter_id = maximums.voter_id AND eligible_voters.block_height = maximums.block_height WHERE eligible_list = $1`)
+		SELECT voter_id, eligible_list, weight, entry_hash, block_height, signing_keys, full_count 
+		FROM fetch_eligible_voters($1, $2)`)
 
 	if offset > 0 {
 		query += fmt.Sprintf(" OFFSET %d", offset)
