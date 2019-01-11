@@ -32,7 +32,7 @@ var revealRow = `voter_id, vote_chain, vote, secret, hmac_algo, entry_hash, bloc
 
 func (g *GraphQLSQLDB) FetchProposalEntries(chainid string) ([]ProposalEntry, error) {
 	query := `
-		SELECT voter_id, commit, reveal FROM fetch_proposal_entries($1);
+		SELECT voter_id, weight, entry_hash, commit, reveal FROM fetch_proposal_entries($1);
 	`
 
 	rows, err := g.SQLDatabase.DB.Query(query, chainid)
@@ -43,7 +43,7 @@ func (g *GraphQLSQLDB) FetchProposalEntries(chainid string) ([]ProposalEntry, er
 	var arr []ProposalEntry
 	for rows.Next() {
 		e := NewProposalEntry()
-		err := rows.Scan(&e.VoterId, &e.Commit, &e.Reveal)
+		err := rows.Scan(&e.VoterId, &e.Weight, &e.EntryHash, &e.Commit, &e.Reveal)
 		if err != nil {
 			return nil, err
 		}

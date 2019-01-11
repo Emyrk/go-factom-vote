@@ -3,6 +3,8 @@ CREATE OR REPLACE FUNCTION fetch_proposal_entries(
 )
   RETURNS TABLE (
     voter_id CHAR(64),
+    weight DOUBLE PRECISION,
+    entry_hash CHAR(64),
     commit CHAR(64),
     reveal CHAR(64)
   )
@@ -14,7 +16,7 @@ BEGIN
   SELECT eligible_voter_chain, commit_start INTO vote_eligible_list, block_height FROM proposals WHERE chain_id = param_vote_chain;
 
   RETURN QUERY
-    SELECT voters.voter_id, coms.entry_hash, revs.entry_hash
+    SELECT voters.voter_id, voters.weight, voters.entry_hash, coms.entry_hash, revs.entry_hash
     FROM fetch_eligible_voters(vote_eligible_list, block_height) AS voters
       LEFT JOIN
       (SELECT commits.voter_id, commits.entry_hash FROM commits

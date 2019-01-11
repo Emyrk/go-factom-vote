@@ -14,7 +14,10 @@ import (
 )
 
 type ProposalEntry struct {
-	VoterId string `json:"voterId"`
+	VoterId   string  `json:"voterId"`
+	Weight    float64 `json:"weight"`
+	EntryHash string  `json:"entryHash"`
+
 	// These can be null
 	Commit sql.NullString `json:"commit"`
 	Reveal sql.NullString `json:"reveal"`
@@ -32,6 +35,14 @@ var ProposalEntryGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"voterId": &graphql.Field{
 			Type: graphql.String,
+		},
+		"entryHash": &graphql.Field{
+			Type:        graphql.String,
+			Description: "EntryHash of the entry that added the voter to the eligible list",
+		},
+		"weight": &graphql.Field{
+			Type:        graphql.Float,
+			Description: "Voter's voting weight",
 		},
 		"commit": &graphql.Field{
 			Type: graphql.String,
