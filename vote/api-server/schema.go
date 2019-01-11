@@ -324,13 +324,30 @@ func (g *GraphQLServer) eligibleListVoters() *graphql.Field {
 			"blockHeight": &graphql.ArgumentConfig{
 				Type: graphql.Int,
 			},
+			"voteChain": &graphql.ArgumentConfig{
+				Type:        graphql.Boolean,
+				Description: "If set to true, that means the provided chainId is a vote chain id, not an eligible list chain id. It will return the list of voters of the eligible chain from the vote, with the commitStart as the blockHeight",
+			},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			chainid := p.Args["chain"].(string)
+			votechain, _ := p.Args["voteChain"].(bool)
 			offset, _ := p.Args["offset"].(int)
 			limit, _ := p.Args["limit"].(int)
 			blockHeight, _ := p.Args["blockHeight"].(int)
-			return g.SQLDB.FetchEligibleVoters(chainid, blockHeight, limit, offset)
+
+			egChain := chainid
+			if votechain {
+				vote, err := g.SQLDB.FetchVote(chainid)
+				if err != nil {
+					return nil, err
+				}
+
+				blockHeight = vote.Definition.PhasesBlockHeights.CommitStart
+				egChain = vote.Definition.EligibleVoterChain
+			}
+
+			return g.SQLDB.FetchEligibleVoters(egChain, blockHeight, limit, offset)
 		},
 	}
 }
