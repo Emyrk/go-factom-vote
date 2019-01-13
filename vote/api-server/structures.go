@@ -29,6 +29,52 @@ func NewProposalEntry() *ProposalEntry {
 	return p
 }
 
+var FactomdProperties = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "FactomdProperties",
+	Description: "Factomd Version",
+	Fields: graphql.Fields{
+		"factomdVersion": &graphql.Field{
+			Type: graphql.String,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				lst, ok := p.Source.([]string)
+				if !ok {
+					return nil, fmt.Errorf("Incorrect type supplied")
+				}
+				return lst[0], nil
+			},
+		},
+		"factomdVersionError": &graphql.Field{
+			Type: graphql.String,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				lst, ok := p.Source.([]string)
+				if !ok {
+					return nil, fmt.Errorf("Incorrect type supplied")
+				}
+				return lst[1], nil
+			},
+		},
+		"factomdAPIVersion": &graphql.Field{
+			Type: graphql.String,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				lst, ok := p.Source.([]string)
+				if !ok {
+					return nil, fmt.Errorf("Incorrect type supplied")
+				}
+				return lst[2], nil
+			},
+		},
+		"factomdAPIVersionError": &graphql.Field{
+			Type: graphql.String,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				lst, ok := p.Source.([]string)
+				if !ok {
+					return nil, fmt.Errorf("Incorrect type supplied")
+				}
+				return lst[3], nil
+			},
+		},
+	}})
+
 var ProposalEntryGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 	Name:        "ProposalEntry",
 	Description: "A commit or reveal in a proposal",

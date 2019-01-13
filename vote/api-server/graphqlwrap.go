@@ -601,3 +601,12 @@ func scanReveal(rows *sql.Rows, r *VoteReveal, extra []interface{}) error {
 
 	return err
 }
+
+func (g *GraphQLSQLDB) FetchNumberOfResults() (int, error) {
+	query := fmt.Sprintf(`SELECT count(*) FROM results`)
+	row := g.SQLDatabase.DB.QueryRow(query)
+	var count int
+	err := row.Scan(&count)
+
+	return count, err
+}

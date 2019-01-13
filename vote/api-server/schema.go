@@ -23,6 +23,7 @@ func (s *GraphQLServer) CreateSchema() (graphql.Schema, error) {
 		"results":              s.results(),
 		"identityKeysAtHeight": s.identityKeysAtHeight(),
 		"proposalEntries":      s.proposalEntries(),
+		"properties":           s.properties(),
 	}
 
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
@@ -33,6 +34,39 @@ func (s *GraphQLServer) CreateSchema() (graphql.Schema, error) {
 	}
 
 	return schema, err
+}
+
+func (s *GraphQLServer) properties() *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.NewObject(graphql.ObjectConfig{
+			Name:        "Properties",
+			Description: "Various properties about the voting daemon",
+			Fields: graphql.Fields{
+				"syncedHeight": &graphql.Field{
+					Type: graphql.Int,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return s.SQLDB.FetchHighestDBInserted(), nil
+					},
+				},
+				"factomdProperties": &graphql.Field{
+					Type: FactomdProperties,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						fdv, fdve, apv, apve, _, _, _, _ := factom.GetProperties()
+						return []string{fdv, fdve, apv, apve}, nil
+					},
+				},
+				"totalVoteResults": &graphql.Field{
+					Type: graphql.Int,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return s.SQLDB.FetchNumberOfResults()
+					},
+				},
+			}}),
+		Description: "Returns various properties of the voting daemon",
+		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+			return new(interface{}), nil
+		},
+	}
 }
 
 func (s *GraphQLServer) proposalEntries() *graphql.Field {

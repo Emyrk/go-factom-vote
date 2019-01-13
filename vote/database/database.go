@@ -76,7 +76,7 @@ func InitDb(sqlConfig SqlConfig) (*SQLDatabase, error) {
 		//	return nil, fmt.Errorf("Error connecting to local db: %s", err.Error())
 		//}
 	case SQL_CON_CUSTOM == sqlConfig.SqlConfigType:
-		flog.Infof("Creating db connection Custom. %s:%s", sqlConfig.Host, sqlConfig.Port)
+		flog.Infof("Creating db connection Custom. %s:%d", sqlConfig.Host, sqlConfig.Port)
 		fmt.Printf("%s@/%s\n", sqlConfig.User, sqlConfig.Schema)
 		connStr := fmt.Sprintf("user=%s password='%s' host=%s port=%d sslmode=disable",
 			sqlConfig.User, sqlConfig.Pass, sqlConfig.Host, sqlConfig.Port)
