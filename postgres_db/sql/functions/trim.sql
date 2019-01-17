@@ -1,0 +1,12 @@
+-- CREATE OR REPLACE FUNCTION trim_db(
+--   param_block_height INTEGER
+-- )
+--   RETURNS TABLE (
+--   )
+-- AS $$
+-- DECLARE
+--   vote_chain CHAR(64);
+-- BEGIN
+--
+-- END;
+-- $$ LANGUAGE plpgsql;
