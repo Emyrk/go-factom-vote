@@ -331,56 +331,6 @@ END;
 $$
 ;
 
-create function insert_results(param_vote_chain character, param_valid_vote boolean, param_complete_count double precision, param_complete_weight double precision, param_voted_count double precision, param_voted_weight integer, param_abstained_count double precision, param_abstained_weight double precision, param_turnout_unweighted double precision, param_turnout_weighted double precision, param_support_unweighted double precision, param_support_weighted double precision, param_option_stats character varying, param_winner_stats character varying) returns integer
-language plpgsql
-as $$
-DECLARE
-BEGIN
-
-  IF exists(SELECT vote_chain FROM results WHERE
-    results.vote_chain = param_vote_chain)
-  THEN
-    -- This is a repeat
-    RETURN 0;
-  ELSE
-    -- Insert data into table
-    INSERT INTO results(vote_chain,
-                        valid_vote,
-                        complete_count,
-                        complete_weight,
-                        voted_count,
-                        voted_weight,
-                        abstained_count,
-                        abstained_weight,
-                        turnout_unweighted,
-                        turnout_weighted,
-                        support_unweighted,
-                        support_weighted,
-                        option_stats,
-                        winner_stats)
-    VALUES(param_vote_chain,
-      param_valid_vote,
-      param_complete_count,
-      param_complete_weight,
-      param_voted_count,
-      param_voted_weight,
-      param_abstained_count,
-      param_abstained_weight,
-      param_turnout_unweighted,
-      param_turnout_weighted,
-      param_support_unweighted,
-           param_support_weighted,
-           param_option_stats,
-           param_winner_stats);
-
-    UPDATE proposals SET complete = True WHERE chain_id = param_vote_chain;
-    RETURN 1;
-  end if;
-  RETURN -1;
-END;
-$$
-;
-
 create function insert_eligible_voter(param_voter_id character, param_eligible_list character, param_weight double precision, param_entry_hash character, param_block_height integer, param_signing_keys character varying) returns integer
 language plpgsql
 as $$
@@ -503,7 +453,7 @@ END;
 $$
 ;
 
-create function fetch_proposal_entries(param_vote_chain character) returns TABLE(voter_id character, commit character, reveal character)
+create function fetch_proposal_entries(param_vote_chain character) returns TABLE(voter_id character, weight double precision, entry_hash character, commit character, reveal character)
 language plpgsql
 as $$
 DECLARE
@@ -512,9 +462,8 @@ DECLARE
 BEGIN
   SELECT eligible_voter_chain, commit_start INTO vote_eligible_list, block_height FROM proposals WHERE chain_id = param_vote_chain;
 
-  RAISE NOTICE '%', block_height;
   RETURN QUERY
-  SELECT voters.voter_id, coms.entry_hash, revs.entry_hash
+  SELECT voters.voter_id, voters.weight, voters.entry_hash, coms.entry_hash, revs.entry_hash
   FROM fetch_eligible_voters(vote_eligible_list, block_height) AS voters
     LEFT JOIN
     (SELECT commits.voter_id, commits.entry_hash FROM commits
@@ -524,6 +473,56 @@ BEGIN
     (SELECT reveals.voter_id, reveals.entry_hash FROM reveals
     WHERE reveals.vote_chain = param_vote_chain) AS revs
       ON revs.voter_id = voters.voter_id;
+END;
+$$
+;
+
+create function insert_results(param_vote_chain character, param_valid_vote boolean, param_complete_count double precision, param_complete_weight double precision, param_voted_count double precision, param_voted_weight double precision, param_abstained_count double precision, param_abstained_weight double precision, param_turnout_unweighted double precision, param_turnout_weighted double precision, param_support_unweighted double precision, param_support_weighted double precision, param_option_stats character varying, param_winner_stats character varying) returns integer
+language plpgsql
+as $$
+DECLARE
+BEGIN
+
+  IF exists(SELECT vote_chain FROM results WHERE
+    results.vote_chain = param_vote_chain)
+  THEN
+    -- This is a repeat
+    RETURN 0;
+  ELSE
+    -- Insert data into table
+    INSERT INTO results(vote_chain,
+                        valid_vote,
+                        complete_count,
+                        complete_weight,
+                        voted_count,
+                        voted_weight,
+                        abstained_count,
+                        abstained_weight,
+                        turnout_unweighted,
+                        turnout_weighted,
+                        support_unweighted,
+                        support_weighted,
+                        option_stats,
+                        winner_stats)
+    VALUES(param_vote_chain,
+      param_valid_vote,
+      param_complete_count,
+      param_complete_weight,
+      param_voted_count,
+      param_voted_weight,
+      param_abstained_count,
+      param_abstained_weight,
+      param_turnout_unweighted,
+      param_turnout_weighted,
+      param_support_unweighted,
+           param_support_weighted,
+           param_option_stats,
+           param_winner_stats);
+
+    UPDATE proposals SET complete = True WHERE chain_id = param_vote_chain;
+    RETURN 1;
+  end if;
+  RETURN -1;
 END;
 $$
 ;
