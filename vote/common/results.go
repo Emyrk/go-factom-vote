@@ -97,15 +97,14 @@ func (s *VoteStats) ComputeWinners(v *Vote) {
 	}
 
 	// Check against the minimum support
-	criteria := v.Proposal.Vote.Config.WinnerCriteria
 	for _, opt := range winners {
 		// Check for criteria for this option
 		if minSupport, ok := criteria.MinSupport[opt.Option]; ok {
-			if opt.Count >= minSupport.Unweighted && opt.Weight >= minSupport.Weighted {
+			if opt.Support >= minSupport.Unweighted && opt.WeightedSupport >= minSupport.Weighted {
 				s.WeightedWinners = append(s.WeightedWinners, opt)
 			}
 		} else if minSupport, ok := criteria.MinSupport["*"]; ok { // All options use this by default if not explicit
-			if opt.Count >= minSupport.Unweighted && opt.Weight >= minSupport.Weighted {
+			if opt.Support >= minSupport.Unweighted && opt.WeightedSupport >= minSupport.Weighted {
 				s.WeightedWinners = append(s.WeightedWinners, opt)
 			}
 		} else {
