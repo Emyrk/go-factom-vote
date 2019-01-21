@@ -196,18 +196,20 @@ func ComputeVoteStatistics(vote *Vote, eligibleVoters []*EligibleVoter, commits 
 
 	// Run through the reveals to tally up the vote options
 	for _, r := range reveals {
-		if len(r.Content.VoteOptions) > maxOptions || len(r.Content.VoteOptions) < minOptions {
-			flog.WithFields(log.Fields{"eHash": r.EntryHash.String(), "reason": "optioncount"}).Errorf("Toss")
-			continue // Ignore, as it does not have the correct amount of votes
-		}
-
 		if voter, ok := voterMap[r.VoterID.Fixed()]; ok {
 			if vote.Proposal.Vote.Config.AllowAbstention && len(r.Content.VoteOptions) == 0 {
 				stats.AbstainedStats.Count += 1
 				stats.AbstainedStats.Weight += float64(voter.VoteWeight)
+			} else if len(r.Content.VoteOptions) > maxOptions || len(r.Content.VoteOptions) < minOptions {
+				flog.WithFields(log.Fields{"eHash": r.EntryHash.String(), "reason": "optioncount"}).Errorf("Toss")
+				continue // Ignore, as it does not have the correct amount of votes
 			}
+
 			for _, v := range r.Content.VoteOptions {
-				stat := stats.OptionStats[v]
+				stat, ok := stats.OptionStats[v]
+				if !ok {
+					continue
+				}
 				stat.Weight += float64(voter.VoteWeight)
 				stat.Count += 1
 				stats.OptionStats[v] = stat

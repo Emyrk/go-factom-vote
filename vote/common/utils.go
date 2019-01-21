@@ -108,3 +108,10 @@ func CheckMAC(algo string, message, messageMAC, key []byte) bool {
 	expectedMAC := mac.Sum(nil)
 	return hmac.Equal(messageMAC, expectedMAC)
 }
+
+func SplitString(s, sep string) []string {
+	if s == "" {
+		return []string{}
+	}
+	return strings.Split(s, sep)
+}

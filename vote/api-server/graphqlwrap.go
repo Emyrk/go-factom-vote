@@ -232,7 +232,7 @@ func scanEligibleVoter(rows *sql.Rows, v *EligibleVoter, extra []interface{}) er
 	err := rows.Scan(
 		arr...,
 	)
-	v.SigningKeys = strings.Split(keys, ",")
+	v.SigningKeys = common.SplitString(keys, ",")
 	return err
 }
 
@@ -329,8 +329,8 @@ func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset 
 	}
 
 	if sort != "" {
-		sortCols := strings.Split(sort, ",")
-		orders := strings.Split(sortOrder, ",")
+		sortCols := common.SplitString(sort, ",")
+		orders := common.SplitString(sortOrder, ",")
 		orders = append(orders, make([]string, len(sortCols)-len(orders))...)
 		for i, s := range sortCols {
 			s = strings.Replace(s, " ", "", -1)
@@ -440,7 +440,7 @@ func scanVote(rows *sql.Rows, v *Vote, extra []interface{}) error {
 	err := rows.Scan(
 		arr...,
 	)
-	v.Definition.Config.Options = strings.Split(options, ",")
+	v.Definition.Config.Options = common.SplitString(options, ",")
 	return err
 }
 
@@ -597,7 +597,7 @@ func scanReveal(rows *sql.Rows, r *VoteReveal, extra []interface{}) error {
 		arr...,
 	)
 
-	r.Vote = strings.Split(vote, ",")
+	r.Vote = common.SplitString(vote, ",")
 
 	return err
 }

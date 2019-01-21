@@ -68,7 +68,7 @@ func (v *Vote) ScanRow(row SQLRowWithScan) (*Vote, error) {
 	egChainBytes, _ := hex.DecodeString(egchain)
 	v.Proposal.Vote.EligibleVotersChainID.SetBytes(egChainBytes)
 
-	v.Proposal.Vote.Config.Options = strings.Split(options, ",")
+	v.Proposal.Vote.Config.Options = SplitString(options, ",")
 
 	json.Unmarshal([]byte(acceptCriteria), &v.Proposal.Vote.Config.AcceptanceCriteria)
 	json.Unmarshal([]byte(winnerCriteria), &v.Proposal.Vote.Config.WinnerCriteria)
@@ -254,7 +254,7 @@ func (v *VoteReveal) ScanRow(row SQLRowWithScan) (*VoteReveal, error) {
 		return nil, err
 	}
 
-	v.Content.VoteOptions = strings.Split(vote, ",")
+	v.Content.VoteOptions = SplitString(vote, ",")
 
 	v.VoterID, _ = primitives.HexToHash(id)
 	v.VoteChain, _ = primitives.HexToHash(chain)
@@ -387,7 +387,7 @@ func (v *EligibleVoter) ScanRow(row SQLRowWithScan) (*EligibleVoter, error) {
 	entryBytes, _ := hex.DecodeString(ehash)
 	v.EntryHash.SetBytes(entryBytes)
 
-	v.SigningKeys = strings.Split(keys, ",")
+	v.SigningKeys = SplitString(keys, ",")
 
 	return v, nil
 }
