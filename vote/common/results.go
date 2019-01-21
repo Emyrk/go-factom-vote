@@ -179,20 +179,20 @@ func ComputeVoteStatistics(vote *Vote, eligibleVoters []*EligibleVoter, commits 
 		stats.CompleteStats.Weight += float64(v.VoteWeight)
 	}
 
-	if vote.Proposal.Vote.Config.AllowAbstention {
-		// Run through the commits, and count up the abstains.
-		// These commits will not have a reveal, so we need to count them
-		// from the commits
-		for _, c := range commits {
-			if c.Content.Commitment == "" {
-				if voter, ok := voterMap[c.VoterID.Fixed()]; ok {
-					stats.AbstainedStats.Count += 1
-					stats.AbstainedStats.Weight += float64(voter.VoteWeight)
-					delete(voterMap, c.VoterID.Fixed())
-				}
-			}
-		}
-	}
+	//if vote.Proposal.Vote.Config.AllowAbstention {
+	//	// Run through the commits, and count up the abstains.
+	//	// These commits will not have a reveal, so we need to count them
+	//	// from the commits
+	//	for _, c := range commits {
+	//		if c.Content.Commitment == "" {
+	//			if voter, ok := voterMap[c.VoterID.Fixed()]; ok {
+	//				stats.AbstainedStats.Count += 1
+	//				stats.AbstainedStats.Weight += float64(voter.VoteWeight)
+	//				delete(voterMap, c.VoterID.Fixed())
+	//			}
+	//		}
+	//	}
+	//}
 
 	// Run through the reveals to tally up the vote options
 	for _, r := range reveals {
@@ -202,6 +202,10 @@ func ComputeVoteStatistics(vote *Vote, eligibleVoters []*EligibleVoter, commits 
 		}
 
 		if voter, ok := voterMap[r.VoterID.Fixed()]; ok {
+			if vote.Proposal.Vote.Config.AllowAbstention && len(r.Content.VoteOptions) == 0 {
+				stats.AbstainedStats.Count += 1
+				stats.AbstainedStats.Weight += float64(voter.VoteWeight)
+			}
 			for _, v := range r.Content.VoteOptions {
 				stat := stats.OptionStats[v]
 				stat.Weight += float64(voter.VoteWeight)
