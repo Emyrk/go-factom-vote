@@ -207,6 +207,22 @@ func NewVoteReveal() *VoteReveal {
 	return r
 }
 
+func (r *VoteReveal) Copy() *VoteReveal {
+	r2 := NewVoteReveal()
+	r2.VoterID = r.VoterID.Copy()
+	r2.VoteChain = r.VoteChain.Copy()
+	r2.EntryHash = r.EntryHash.Copy()
+	r2.BlockHeight = r.BlockHeight
+
+	r2.Content.VoteOptions = make([]string, len(r.Content.VoteOptions))
+	for i := range r2.Content.VoteOptions {
+		r2.Content.VoteOptions[i] = r.Content.VoteOptions[i]
+	}
+	r2.Content.Secret = r.Content.Secret
+	r2.Content.HmacAlgo = r.Content.HmacAlgo
+	return r2
+}
+
 func NewVoteRevealFromEntry(entry interfaces.IEBEntry, blockHeight int) (*VoteReveal, error) {
 	if len(entry.ExternalIDs()) != 2 {
 		return nil, fmt.Errorf("expected 2 extids, found %d", len(entry.ExternalIDs()))

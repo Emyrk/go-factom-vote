@@ -192,7 +192,7 @@ func (s *Scraper) computeResults(dbheight int) error {
 			return err
 		}
 
-		results, err := common.ComputeResult(v, voters, commits, reveals)
+		results, err := common.ComputeResult(v, voters, reveals)
 		if err != nil {
 			flog.WithField("vote", v.Proposal.ProposalChain.String()).Error(err)
 		}
