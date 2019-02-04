@@ -186,6 +186,8 @@ func (s *Scraper) computeResults(dbheight int) error {
 			return err
 		}
 
+		var _ = commits
+
 		reveals, err := s.Database.FetchReveals(v.Proposal.ProposalChain.String())
 		if err != nil {
 			tx.Rollback()

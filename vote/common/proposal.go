@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"bytes"
+
+	"github.com/FactomProject/btcutil/base58"
+	"github.com/FactomProject/factom"
 	"github.com/FactomProject/factomd/common/interfaces"
 	"github.com/FactomProject/factomd/common/primitives"
 )
@@ -63,6 +67,27 @@ func NewProposalEntry(entry interfaces.IEBEntry, dbheight int) (*ProposalEntry, 
 	if !p.InitiatorSignature.Verify(signData) {
 		return nil, fmt.Errorf("Invalid signature on proposal")
 	}
+
+	// Validate Identity has key
+	keys, err := factom.GetActiveIdentityKeysAtHeight(p.VoteInitiator.String(), int64(dbheight))
+	if err != nil {
+		return nil, err
+	}
+
+	validKey := false
+	for _, k := range keys {
+		data := base58.Decode(k)
+		pubkey := data[factom.IDKeyPrefixLength:factom.IDKeyBodyLength]
+		if bytes.Compare(pubkey, p.InitiatorKey[:]) == 0 {
+			validKey = true
+			break
+		}
+	}
+
+	if !validKey {
+		return nil, fmt.Errorf("invalid identity key")
+	}
+	// --
 
 	err = json.Unmarshal(entry.GetContent(), p)
 	if err != nil {
