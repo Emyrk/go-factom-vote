@@ -151,16 +151,16 @@ var IRVVectors = []IRVVector{
 		},
 		[]string{"A"},
 	},
-	// 2nd level winner
-	//IRVVector{
-	//	[]string{"A", "B", "C"},
-	//	[][]string{
-	//		[]string{"A"},
-	//		[]string{"B", "A"},
-	//		[]string{"C"},
-	//	},
-	//	[]string{"A"},
-	//},
+	// 2nd level winner -- Edge case
+	IRVVector{
+		[]string{"A", "B", "C"},
+		[][]string{
+			[]string{"A"},
+			[]string{"B", "A"},
+			[]string{"C"},
+		},
+		[]string{},
+	},
 	IRVVector{
 		[]string{"A", "B", "C", "D"},
 		[][]string{
@@ -171,5 +171,18 @@ var IRVVectors = []IRVVector{
 			[]string{"C"},
 		},
 		[]string{"D"},
+	},
+	// JS Vector
+	IRVVector{
+		[]string{"Bob", "Sue", "Bill", "Paul"},
+		[][]string{
+			[]string{"Bob", "Bill", "Sue"},
+			[]string{"Sue", "Bill", "Bob"},
+			[]string{"Paul", "Bill", "Sue"},
+			[]string{"Bob", "Bill", "Sue"},
+			[]string{"Sue", "Bob", "Bill"},
+			[]string{"Sue", "Bill", "Bob"},
+		},
+		[]string{"Sue"},
 	},
 }

@@ -174,12 +174,12 @@ func minority(roundResult map[string]IRVRoundResult) []IRVRoundResult {
 	var lowestR []IRVRoundResult
 	for _, r := range roundResult {
 		if lowest == -1 {
-			lowest = r.Weight
+			lowest = r.Count
 			lowestR = append(lowestR, r)
 			continue
 		}
 		if r.Weight < lowest {
-			lowest = r.Weight
+			lowest = r.Count
 			lowestR = []IRVRoundResult{r}
 			continue
 		}
@@ -203,11 +203,11 @@ func majority(roundResult map[string]IRVRoundResult) *IRVRoundResult {
 	// Uses 50% weight threshold
 	total := float64(0)
 	for _, r := range roundResult {
-		total += r.Weight
+		total += r.Count
 	}
 	threshold := math.Ceil((total / 2) + 0.5)
 	for _, r := range roundResult {
-		if r.Weight >= threshold {
+		if r.Count >= threshold {
 			return &r
 		}
 	}
