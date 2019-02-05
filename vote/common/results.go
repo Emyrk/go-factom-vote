@@ -150,6 +150,7 @@ func ComputeIRVVote(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*Vote
 		stat := stats.OptionStats[opt]
 		stat.Weight = res.Weight
 		stat.Count = res.Count
+		stats.OptionStats[opt] = stat
 	}
 
 	err := stats.ComputeSupport(vote)

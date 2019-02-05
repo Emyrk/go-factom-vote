@@ -11,7 +11,7 @@ import (
 
 type arrayFlags []string
 
-var version = "v0.1.0"
+var version = "v1.0.0"
 
 func (i *arrayFlags) String() string {
 	return "my string representation"

@@ -141,7 +141,7 @@ type IRVVector struct {
 }
 
 var IRVVectors = []IRVVector{
-	// Simple winner
+	//// Simple winner
 	IRVVector{
 		[]string{"A", "B", "C"},
 		[][]string{
@@ -184,5 +184,13 @@ var IRVVectors = []IRVVector{
 			[]string{"Sue", "Bill", "Bob"},
 		},
 		[]string{"Sue"},
+	},
+	// Egs
+	IRVVector{
+		[]string{"No", "Maybe"},
+		[][]string{
+			[]string{"No", "Maybe"},
+		},
+		[]string{"No"},
 	},
 }
