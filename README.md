@@ -47,3 +47,7 @@ is required.
 docker-compose up -d --no-deps --build scraper
 ```
 
+# API
+
+The api uses graphql, and documentation can be found in the playground at `localhost/graphql`
+
