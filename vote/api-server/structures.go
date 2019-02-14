@@ -34,7 +34,8 @@ var FactomdProperties = graphql.NewObject(graphql.ObjectConfig{
 	Description: "Factomd Version",
 	Fields: graphql.Fields{
 		"factomdVersion": &graphql.Field{
-			Type: graphql.String,
+			Type:        graphql.String,
+			Description: "Version of factomd the scraper is talking to.",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				lst, ok := p.Source.([]string)
 				if !ok {
@@ -80,7 +81,8 @@ var ProposalEntryGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 	Description: "A commit or reveal in a proposal",
 	Fields: graphql.Fields{
 		"voterId": &graphql.Field{
-			Type: graphql.String,
+			Description: "Identity of voter",
+			Type:        graphql.String,
 		},
 		"entryHash": &graphql.Field{
 			Type:        graphql.String,
@@ -91,7 +93,8 @@ var ProposalEntryGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 			Description: "Voter's voting weight",
 		},
 		"commit": &graphql.Field{
-			Type: graphql.String,
+			Type:        graphql.String,
+			Description: "Entryhash of voter's commit (if exists)",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				ent, ok := p.Source.(ProposalEntry)
 				if !ok {
@@ -106,7 +109,8 @@ var ProposalEntryGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 			},
 		},
 		"reveal": &graphql.Field{
-			Type: graphql.String,
+			Type:        graphql.String,
+			Description: "Entryhash of voter's reveal (if exists)",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				ent, ok := p.Source.(ProposalEntry)
 				if !ok {
@@ -143,7 +147,8 @@ var VoteListGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 	Description: "A list of votes",
 	Fields: graphql.Fields{
 		"listInfo": &graphql.Field{
-			Type: JSON,
+			Description: "Information about location in list (offset, total, limit)",
+			Type:        JSON,
 		},
 		"voteList": &graphql.Field{
 			Type: graphql.NewList(VoteGraphQLType),
@@ -164,7 +169,8 @@ var VoteGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 	Description: "The full vote data structure.",
 	Fields: graphql.Fields{
 		"voteChainId": &graphql.Field{
-			Type: graphql.String,
+			Description: "Chain ID of the vote.",
+			Type:        graphql.String,
 		},
 		"vote": &graphql.Field{
 			Type: VoteDefinitionGraphQLType,
@@ -241,28 +247,36 @@ var VoteAdminGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 	Description: "",
 	Fields: graphql.Fields{
 		"voteInitiator": &graphql.Field{
-			Type: graphql.String,
+			Description: "Identity that constructed the vote.",
+			Type:        graphql.String,
 		},
 		"signingKey": &graphql.Field{
-			Type: graphql.String,
+			Description: "Signing key used by vote initiator.",
+			Type:        graphql.String,
 		},
 		"signature": &graphql.Field{
-			Type: graphql.String,
+			Description: "Signature of the vote initiator.",
+			Type:        graphql.String,
 		},
 		"adminEntryHash": &graphql.Field{
-			Type: graphql.String,
+			Description: "Entryhash of the entry that sets up the vote.",
+			Type:        graphql.String,
 		},
 		"blockHeight": &graphql.Field{
-			Type: graphql.Int,
+			Description: "Height the vote was created",
+			Type:        graphql.Int,
 		},
 		"registered": &graphql.Field{
-			Type: graphql.Boolean,
+			Description: "Registered in the list of votes chain.",
+			Type:        graphql.Boolean,
 		},
 		"complete": &graphql.Field{
-			Type: graphql.Boolean,
+			Description: "Vote has concluded.",
+			Type:        graphql.Boolean,
 		},
 		"protocolVersion": &graphql.Field{
-			Type: graphql.Int,
+			Description: "Version of the voting spec used",
+			Type:        graphql.Int,
 		},
 		//"voteInfo": &graphql.Field{
 		//	Type: VAVoteInfoGraphQLType,
@@ -274,7 +288,8 @@ var VAVoteInfoGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 	Description: "",
 	Fields: graphql.Fields{
 		"title": &graphql.Field{
-			Type: graphql.String,
+			Type:        graphql.String,
+			Description: "Vote title",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				vd, ok := p.Source.(VoteDetails)
 				if !ok {
@@ -288,7 +303,8 @@ var VAVoteInfoGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 			},
 		},
 		"text": &graphql.Field{
-			Type: graphql.String,
+			Type:        graphql.String,
+			Description: "Vote description",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				vd, ok := p.Source.(VoteDetails)
 				if !ok {
@@ -302,7 +318,8 @@ var VAVoteInfoGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 			},
 		},
 		"externalRef": &graphql.Field{
-			Type: JSON,
+			Type:        JSON,
+			Description: "External Reference could be a link to an external document",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				vd, ok := p.Source.(VoteDetails)
 				if !ok {
@@ -334,7 +351,8 @@ var VoteDefinitionGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 			Type: VDConfigGraphQLType,
 		},
 		"eligibleVotersChainId": &graphql.Field{
-			Type: graphql.String,
+			Description: "Chain containing the list of eligible voters",
+			Type:        graphql.String,
 		},
 	}})
 
@@ -654,16 +672,19 @@ var VoteResultsGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.String,
 		},
 		"valid": &graphql.Field{
-			Type: graphql.Boolean,
+			Description: "If the vote is deemed valid from the turnout",
+			Type:        graphql.Boolean,
 		},
 		"invalidReason": &graphql.Field{
 			Type: graphql.String,
 		},
 		"total": &graphql.Field{
-			Type: JSON,
+			Description: "Counts of all voters, regardless if they voted",
+			Type:        JSON,
 		},
 		"voted": &graphql.Field{
-			Type: JSON,
+			Description: "Counts of the voters that VOTED",
+			Type:        JSON,
 		},
 		"abstain": &graphql.Field{
 			Type: JSON,
@@ -678,7 +699,8 @@ var VoteResultsGraphQLType = graphql.NewObject(graphql.ObjectConfig{
 			Type: JSON,
 		},
 		"weightedWinners": &graphql.Field{
-			Type: JSON,
+			Description: "Winner(s) of the vote",
+			Type:        JSON,
 		},
 	}})
 
