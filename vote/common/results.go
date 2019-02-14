@@ -32,6 +32,9 @@ func ComputeResult(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*VoteR
 }
 
 func FilterInvalidVotes(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*VoteReveal) []*VoteReveal {
+	if vote.Proposal.ProposalChain.String() == "677a0f58308d5b9e7c31b05843e976399c233e0625a11a940605b250945e459c" {
+		fmt.Println("FOUND")
+	}
 	minOptions := vote.Proposal.Vote.Config.MinOptions
 	maxOptions := vote.Proposal.Vote.Config.MaxOptions
 
@@ -61,8 +64,15 @@ func FilterInvalidVotes(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*
 				// Valid
 				validVotes = append(validVotes, r)
 				delete(voterMap, r.VoterID.Fixed())
+			} else if len(r.Content.VoteOptions) == 0 && vote.Proposal.Vote.Config.AllowAbstention {
+				// Valid
+				validVotes = append(validVotes, r)
+				delete(voterMap, r.VoterID.Fixed())
 			}
 		}
+	}
+	if vote.Proposal.ProposalChain.String() == "677a0f58308d5b9e7c31b05843e976399c233e0625a11a940605b250945e459c" {
+		fmt.Println("FOUND")
 	}
 	return validVotes
 }
