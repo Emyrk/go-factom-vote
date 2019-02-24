@@ -1,4 +1,6 @@
 
+[![Build Status](https://travis-ci.org/Emyrk/go-factom-vote.svg?branch=master)](https://travis-ci.org/Emyrk/go-factom-vote)
+
 # Go-Factom-Vote
 
 This is the Factom blockchain voting daemon. It parses the blockchain 
