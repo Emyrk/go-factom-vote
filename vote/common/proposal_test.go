@@ -86,17 +86,6 @@ func TestProposalJSONMarshal(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
-	j = `
-{"proposal":{"title":"Is the on-chain voting grant a success?","text":"Please tell if you think this grant was a success","externalRef":{"href":"https://the-voting-grant/vote","hash":{"value":"b950beb02d45cc9c96c198243af669b3dc57d31de994d655f506372fdec3a885","algo":"sha256"}}},"vote":{"commitStartBlockHeight":1000,"commitEndBlockHeight":2000,"revealStartBlockHeight":2001,"revealEndBlockHeight":3000,"participantsChainId":"1891a4fc0feb9a2cce9a384992da69eb032a167ca3fe4545ed22783e49c73321","type":0,"config":{"options":["yes","no","maybe"],"minOptions":1,"maxOptions":1,"acceptanceCriteria":{"minTurnout":0.5,"minSupport":0.6,"weighted":true}},"allowVoteOverwrite":true}}`
-
-	p = new(ProposalEntry)
-	err = json.Unmarshal([]byte(j), p)
-	if err != nil {
-		t.Error(err)
-	}
-
-	// TODO: Check unmarshaled values
 }
 
 func TestNewValidVoteCommit(t *testing.T) {
@@ -119,26 +108,27 @@ func TestNewValidVoteCommit(t *testing.T) {
 	}
 }
 
-func TestNewValidVoteProposal(t *testing.T) {
-	e := entryBlock.NewEntry()
-	chain, _ := primitives.HexToHash("6ac365f648477399de0513e7754902a826c6f6527bfcfaafa1379038e2bae4d3")
-
-	// Ehash on testnet = b0d50e804e90cd2a7c2e775e2dcf9f4adeeb806e7e84179642ea65cd0c8d3e6b
-	e.ChainID = chain
-	e.ExtIDs = make([]primitives.ByteSlice, 5)
-	e.ExtIDs[0].Bytes = []byte("factom-vote")
-	e.ExtIDs[1].Bytes, _ = hex.DecodeString("fffd")
-	e.ExtIDs[2].Bytes, _ = hex.DecodeString("2d98021e3cf71580102224b2fcb4c5c60595e8fdf6fd1b97c6ef63e9fb3ed635")
-	e.ExtIDs[3].Bytes, _ = hex.DecodeString("c103756200d0c1223c0ee9911196bf06de6ee570b0f45897e2ef39f9abf39d24")
-	e.ExtIDs[4].Bytes, _ = hex.DecodeString("e56926c84f7edb0774539e03aa4d16e8220c4f3746c872feb4afcc52abf06cceb61cf417c8af417699fc0171bdf9bd543219a23a845776bd6b30c315bd66f100")
-
-	e.Content.Bytes = []byte(`{"proposal":{"title":"Vegetable Award","text":"Please vote for your favorite vegetable"},"vote":{"phasesBlockHeights":{"commitStart":49595,"commitEnd":49595,"revealStart":49596,"revealEnd":49596},"type":1,"config":{"options":["broccoli","spinach","avocado"],"minOptions":1,"maxOptions":2,"acceptanceCriteria":{"minTurnout":{"weighted":0.3,"unweighted":0.5}},"allowAbstention":true,"computeResultsAgainst":"ALL_ELIGIBLE_VOTERS","winnerCriteria":{"minSupport":{"*":{"weighted":0.6,"unweighted":0.4}}}},"eligibleVotersChainId":"84444341e0e60a496f75c98c57357805ec86e9f8e232348f1e60704e83bca2b0"}}`)
-
-	_, err := NewProposalEntry(e, 0)
-	if err != nil {
-		t.Error(err)
-	}
-}
+// Requires running factomd
+//func TestNewValidVoteProposal(t *testing.T) {
+//	e := entryBlock.NewEntry()
+//	chain, _ := primitives.HexToHash("6ac365f648477399de0513e7754902a826c6f6527bfcfaafa1379038e2bae4d3")
+//
+//	// Ehash on testnet = b0d50e804e90cd2a7c2e775e2dcf9f4adeeb806e7e84179642ea65cd0c8d3e6b
+//	e.ChainID = chain
+//	e.ExtIDs = make([]primitives.ByteSlice, 5)
+//	e.ExtIDs[0].Bytes = []byte("factom-vote")
+//	e.ExtIDs[1].Bytes, _ = hex.DecodeString("fffd")
+//	e.ExtIDs[2].Bytes, _ = hex.DecodeString("2d98021e3cf71580102224b2fcb4c5c60595e8fdf6fd1b97c6ef63e9fb3ed635")
+//	e.ExtIDs[3].Bytes, _ = hex.DecodeString("c103756200d0c1223c0ee9911196bf06de6ee570b0f45897e2ef39f9abf39d24")
+//	e.ExtIDs[4].Bytes, _ = hex.DecodeString("e56926c84f7edb0774539e03aa4d16e8220c4f3746c872feb4afcc52abf06cceb61cf417c8af417699fc0171bdf9bd543219a23a845776bd6b30c315bd66f100")
+//
+//	e.Content.Bytes = []byte(`{"proposal":{"title":"Vegetable Award","text":"Please vote for your favorite vegetable"},"vote":{"phasesBlockHeights":{"commitStart":49595,"commitEnd":49595,"revealStart":49596,"revealEnd":49596},"type":1,"config":{"options":["broccoli","spinach","avocado"],"minOptions":1,"maxOptions":2,"acceptanceCriteria":{"minTurnout":{"weighted":0.3,"unweighted":0.5}},"allowAbstention":true,"computeResultsAgainst":"ALL_ELIGIBLE_VOTERS","winnerCriteria":{"minSupport":{"*":{"weighted":0.6,"unweighted":0.4}}}},"eligibleVotersChainId":"84444341e0e60a496f75c98c57357805ec86e9f8e232348f1e60704e83bca2b0"}}`)
+//
+//	_, err := NewProposalEntry(e, 0)
+//	if err != nil {
+//		t.Error(err)
+//	}
+//}
 
 func TestEligibleVoter(t *testing.T) {
 	data := `[{"voterId":"2d98021e3cf71580102224b2fcb4c5c60595e8fdf6fd1b97c6ef63e9fb3ed635","weight":2},{"voterId":"44dc565dd5330aaec455583372b233bd1171af531d5083b6d4128b7909218319","weight":6}]`
