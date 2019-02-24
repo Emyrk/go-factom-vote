@@ -435,6 +435,65 @@ var VoteVectors = []VoteVector{
 		Winners: []string{},
 	},
 
+	// Edge out the victory by 0.01
+	VoteVector{
+		VoteType: VOTE_BINARY,
+		Options:  []string{"A", "B"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 2, "win": WinnerCriteriaStruct{
+				MinSupport: map[string]CriteriaWeights{"*": CriteriaWeights{.3, 0.5}},
+			},
+			"cpa": "PARTICIPANTS_ONLY",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"A"}, 1.01},
+			IndvVote{[]string{"B"}, 1},
+		},
+		ExtraChecks: &ExtraChecks{
+			OptionStats: map[string]VoteOptionStats{
+				"A": VoteOptionStats{
+					OptionStats: OptionStats{Option: "A", Count: 1, Weight: 1.01}},
+				"B": VoteOptionStats{
+					OptionStats: OptionStats{Option: "B", Count: 1, Weight: 1}},
+				"": VoteOptionStats{
+					OptionStats: OptionStats{Option: "", Count: 0, Weight: 0}},
+			},
+		},
+		Winners: []string{"A"},
+	},
+
+	// No winner
+	VoteVector{
+		VoteType: VOTE_BINARY,
+		Options:  []string{"A", "B"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 2, "win": WinnerCriteriaStruct{
+				MinSupport: map[string]CriteriaWeights{"*": CriteriaWeights{.3, 0.5}},
+			},
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"A"}, 1.01},
+			IndvVote{[]string{"B"}, 1},
+			IndvVote{[]string{"C"}, 1},
+			IndvVote{[]string{"C"}, 1},
+			IndvVote{[]string{"C"}, 1},
+		},
+		ExtraChecks: &ExtraChecks{
+			OptionStats: map[string]VoteOptionStats{
+				"A": VoteOptionStats{
+					OptionStats: OptionStats{Option: "A", Count: 1, Weight: 1.01}},
+				"B": VoteOptionStats{
+					OptionStats: OptionStats{Option: "B", Count: 1, Weight: 1}},
+				"": VoteOptionStats{
+					OptionStats: OptionStats{Option: "", Count: 0, Weight: 0}},
+			},
+		},
+		Winners: []string{},
+	},
+
 	/****************
 	 *	IRV Votes   *
 	 ****************/
