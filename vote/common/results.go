@@ -262,10 +262,36 @@ type OptionStats struct {
 	Weight float64 `json:"weight"`
 }
 
+func (a OptionStats) IsSameAs(b OptionStats) bool {
+	if a.Option != b.Option {
+		return false
+	}
+	if a.Count != b.Count {
+		return false
+	}
+	if a.Weight != b.Weight {
+		return false
+	}
+	return true
+}
+
 type VoteOptionStats struct {
 	OptionStats
 	Support         float64 `json:"support"`
 	WeightedSupport float64 `json:"weightedSupport"`
+}
+
+func (a VoteOptionStats) IsSameAs(b VoteOptionStats) bool {
+	if !a.OptionStats.IsSameAs(b.OptionStats) {
+		return false
+	}
+	if a.Support != b.Support {
+		return false
+	}
+	if a.WeightedSupport != b.WeightedSupport {
+		return false
+	}
+	return true
 }
 
 type VoteStats struct {

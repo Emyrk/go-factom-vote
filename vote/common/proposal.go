@@ -142,27 +142,20 @@ type VoteContent struct {
 	} `json:"config"`
 }
 
+type CriteriaWeights struct {
+	Weighted   float64 `json:"weighted"`
+	Unweighted float64 `json:"unweighted"`
+}
+
 type AcceptCriteriaStruct struct {
-	MinSupport struct {
-		Weighted   float64 `json:"weighted"`
-		Unweighted float64 `json:"unweighted"`
-	} `json:"-"`
-	MinTurnout struct {
-		Weighted   float64 `json:"weighted"`
-		Unweighted float64 `json:"unweighted"`
-	} `json:"minTurnout, omitempty"`
+	MinSupport CriteriaWeights `json:"-"`
+	MinTurnout CriteriaWeights `json:"minTurnout, omitempty"`
 }
 
 type WinnerCriteriaStruct struct {
 	// The strings in the map are the options. "OptionA", etc
-	MinSupport map[string]struct {
-		Weighted   float64 `json:"weighted"`
-		Unweighted float64 `json:"unweighted"`
-	} `json:"minSupport, omitempty"`
-	MinTurnout struct {
-		Weighted   float64 `json:"weighted"`
-		Unweighted float64 `json:"unweighted"`
-	} `json:"-"`
+	MinSupport map[string]CriteriaWeights `json:"minSupport, omitempty"`
+	MinTurnout CriteriaWeights            `json:"-"`
 }
 
 // IsDataValid runs a check on the data to check if it's valid against the rules
