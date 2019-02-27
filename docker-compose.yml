@@ -41,6 +41,8 @@ services:
        dockerfile: Dockerfile.scraper
     networks:
       vote_app:
+    ports:
+        - "6060:6060"
     depends_on:
         - db
         - factomd

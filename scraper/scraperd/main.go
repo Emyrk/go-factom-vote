@@ -37,6 +37,8 @@ func main() {
 	flag.Var(&enabledRoutines, "routine", "Can modify which routines are run")
 	flag.Parse()
 
+	go StartProfiler(true)
+
 	config := new(database.SqlConfig)
 	if *postgreshost != "localhost" {
 		config.SqlConfigType = database.SQL_CON_CUSTOM
