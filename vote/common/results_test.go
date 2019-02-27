@@ -555,4 +555,14 @@ var VoteVectors = []VoteVector{
 		},
 		Winners: []string{"No"},
 	},
+	VoteVector{VoteType: VOTE_IRV,
+		Options: []string{"A", "B", "C", "D"},
+		Votes: []IndvVote{
+			IndvVote{[]string{"B", "D"}, 1},
+			IndvVote{[]string{"B", "A"}, 1},
+			IndvVote{[]string{"C", "B"}, 1},
+			IndvVote{[]string{"C", "D"}, 1},
+		},
+		Winners: []string{},
+	},
 }

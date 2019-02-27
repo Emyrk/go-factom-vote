@@ -124,6 +124,11 @@ func ComputeIRVVote(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*Vote
 	for winner == nil { // Rounds
 		round := make(map[string]IRVRoundResult)
 
+		// Init rounds to 0 votes per option
+		for opt, _ := range availableOptions {
+			round[opt] = IRVRoundResult{Option: opt, Count: 0, Weight: 0}
+		}
+
 		// Tally votes
 		for _, r := range revealCopies {
 			if voter, ok := voterMap[r.VoterID.Fixed()]; ok {
