@@ -166,14 +166,42 @@ func TestVoteVector(t *testing.T) {
 		// Check if winners correct
 		err = ExpectedWinners(stats, v.Winners)
 		if err != nil {
-			t.Error(fmt.Errorf("Vect %d -> %s", i, err.Error()))
+			t.Error(fmt.Errorf("Vect %d (%s) -> %s", i, v.Title, err.Error()))
 		}
 
 		err = ExpectedChecks(stats, v)
 		if err != nil {
-			t.Error(fmt.Errorf("Vect %d -> %s", i, err.Error()))
+			t.Error(fmt.Errorf("Vect %d (%s) -> %s", i, v.Title, err.Error()))
 		}
 
+	}
+}
+
+func TestSpecificVoteVector(t *testing.T) {
+	i := 15
+	v := VoteVectors[i]
+
+	vote := MakeTestVote(v.Options, 1, 10)
+	vote.SetOptions(v)
+	for _, r := range v.Votes {
+		vote.AddVote(r.Options, r.Weight)
+	}
+
+	// Results
+	stats, err := ComputeResult(vote.Params())
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Check if winners correct
+	err = ExpectedWinners(stats, v.Winners)
+	if err != nil {
+		t.Error(fmt.Errorf("Vect %d (%s) -> %s", i, v.Title, err.Error()))
+	}
+
+	err = ExpectedChecks(stats, v)
+	if err != nil {
+		t.Error(fmt.Errorf("Vect %d (%s) -> %s", i, v.Title, err.Error()))
 	}
 }
 
@@ -223,6 +251,7 @@ type IndvVote struct {
 }
 
 type VoteVector struct {
+	Title    string
 	VoteType int
 	Options  []string
 	Votes    []IndvVote
@@ -513,6 +542,11 @@ var VoteVectors = []VoteVector{
 	VoteVector{
 		VoteType: VOTE_IRV,
 		Options:  []string{"A", "B", "C"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
 		Votes: []IndvVote{
 			IndvVote{[]string{"A"}, 1},
 			IndvVote{[]string{"B", "A"}, 1},
@@ -523,6 +557,11 @@ var VoteVectors = []VoteVector{
 	VoteVector{
 		VoteType: VOTE_IRV,
 		Options:  []string{"A", "B", "C", "D"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
 		Votes: []IndvVote{
 			IndvVote{[]string{"A", "B", "D"}, 1},
 			IndvVote{[]string{"B", "A", "D"}, 1},
@@ -536,6 +575,11 @@ var VoteVectors = []VoteVector{
 	VoteVector{
 		VoteType: VOTE_IRV,
 		Options:  []string{"Bob", "Sue", "Bill", "Paul"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
 		Votes: []IndvVote{
 			IndvVote{[]string{"Bob", "Bill", "Sue"}, 1},
 			IndvVote{[]string{"Sue", "Bill", "Bob"}, 1},
@@ -557,6 +601,11 @@ var VoteVectors = []VoteVector{
 	},
 	VoteVector{VoteType: VOTE_IRV,
 		Options: []string{"A", "B", "C", "D"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
 		Votes: []IndvVote{
 			IndvVote{[]string{"B", "D"}, 1},
 			IndvVote{[]string{"B", "A"}, 1},
@@ -564,5 +613,394 @@ var VoteVectors = []VoteVector{
 			IndvVote{[]string{"C", "D"}, 1},
 		},
 		Winners: []string{},
+	},
+
+	//* Aproval Votes *
+
+	VoteVector{
+		VoteType: VOTE_SINGLE,
+		Title:    "Ben Set Approval 0",
+		Options:  []string{"A", "B", "C", "D", "E"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"A", "B", "C", "E"}, 3},
+			IndvVote{[]string{"A", "B", "C"}, 3},
+			IndvVote{[]string{"A", "B", "C"}, 3},
+			IndvVote{[]string{"E", "D"}, 7},
+			IndvVote{[]string{"D"}, 3.01},
+		},
+
+		Winners: []string{"D"},
+	},
+
+	VoteVector{
+		VoteType: VOTE_SINGLE,
+		Title:    "Ben Set Approval 1",
+		Options:  []string{"A", "B", "C", "D", "E"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+			"win": WinnerCriteriaStruct{
+				MinSupport: map[string]CriteriaWeights{"*": CriteriaWeights{.5, 0.5}},
+			},
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"A", "B", "C", "E"}, 3},
+			IndvVote{[]string{"A", "B", "C"}, 3},
+			IndvVote{[]string{"A", "B", "C"}, 3},
+			IndvVote{[]string{"E", "D"}, 7},
+			IndvVote{[]string{"D"}, 3.01},
+			IndvVote{[]string{}, 4},
+		},
+
+		Winners: []string{},
+	},
+
+	//* IRV Votes *
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 1",
+		Options:  []string{"A", "B", "C", "D"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"A", "B", "C", "D"}, 1},
+			IndvVote{[]string{"B", "C", "D", "A"}, 1},
+			IndvVote{[]string{"C", "D", "A", "B"}, 1},
+			IndvVote{[]string{"D", "A", "B", "C"}, 1},
+		},
+		Winners: []string{},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 2",
+		Options:  []string{"A", "B", "C", "D"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"B", "D"}, 1},
+			IndvVote{[]string{"B", "A"}, 1},
+			IndvVote{[]string{"C", "B"}, 1},
+			IndvVote{[]string{"C", "D"}, 1},
+		},
+		Winners: []string{},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 3",
+		Options:  []string{"A", "B", "C", "D"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"B", "D"}, 1},
+			IndvVote{[]string{"B", "A"}, 1},
+			IndvVote{[]string{"C", "B"}, 1},
+			IndvVote{[]string{"C", "D"}, 1},
+			IndvVote{[]string{"A", "B"}, 1},
+			IndvVote{[]string{"D", "B"}, 1},
+		},
+		Winners: []string{"B"},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 4",
+		Options:  []string{"A", "B", "C", "D"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"B", "D"}, 1},
+			IndvVote{[]string{"B", "A"}, 1},
+			IndvVote{[]string{"C", "B"}, 1},
+			IndvVote{[]string{"C", "D"}, 1},
+			IndvVote{[]string{"A", "B"}, 1},
+			IndvVote{[]string{"D", "C"}, 1},
+		},
+		Winners: []string{},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 5",
+		Options:  []string{"A", "B", "C", "D"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"B", "D"}, 1},
+			IndvVote{[]string{"B", "A"}, 1},
+			IndvVote{[]string{"C", "B"}, 1},
+			IndvVote{[]string{"C", "D"}, 1},
+			IndvVote{[]string{"A", "D"}, 1},
+			IndvVote{[]string{"D", "C"}, 1},
+		},
+		Winners: []string{"C"},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 6",
+		Options:  []string{"A", "B", "C", "D", "E", "F"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"A", "C", "D", "E"}, 1},
+			IndvVote{[]string{"A", "C", "D", "E"}, 1},
+			IndvVote{[]string{"B", "C", "D", "E"}, 1},
+			IndvVote{[]string{"B", "C", "D", "E"}, 1},
+			IndvVote{[]string{"C", "E", "F", "A"}, 1},
+			IndvVote{[]string{"D", "E", "F", "A"}, 1},
+		},
+		Winners: []string{"A"},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 7",
+		Options:  []string{"A", "B", "C", "D", "E", "F"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"B"}, 1},
+			IndvVote{[]string{"B", "D", "E", "F", "A"}, 1},
+			IndvVote{[]string{"B"}, 1},
+			IndvVote{[]string{"C"}, 1},
+			IndvVote{[]string{"C"}, 1},
+			IndvVote{[]string{"D", "A"}, 1},
+		},
+		Winners: []string{"A"},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 8",
+		Options:  []string{"A", "B", "C", "D", "E", "F"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"B"}, 1},
+			IndvVote{[]string{"B"}, 1},
+			IndvVote{[]string{"C", "D", "E", "F", "A"}, 1},
+			IndvVote{[]string{"D"}, 1},
+		},
+		Winners: []string{"A"},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 10",
+		Options:  []string{"A", "B", "C", "D", "E", "F"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"A", "E", "F"}, 1},
+			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"B"}, 1},
+			IndvVote{[]string{"B"}, 1},
+			IndvVote{[]string{"C", "E", "F"}, 1},
+			IndvVote{[]string{"C"}, 1},
+			IndvVote{[]string{"D"}, 1},
+		},
+		Winners: []string{},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 11",
+		Options:  []string{"A", "B", "C", "D"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"B", "D"}, 1},
+			IndvVote{[]string{"B", "A"}, 1},
+			IndvVote{[]string{"C", "B"}, 1},
+			IndvVote{[]string{"C", "D"}, 1},
+			IndvVote{[]string{}, 1},
+		},
+		Winners: []string{},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 12",
+		Options:  []string{"A", "B", "C", "D"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{}, 1},
+			IndvVote{[]string{}, 1},
+			IndvVote{[]string{}, 1},
+			IndvVote{[]string{}, 1},
+			IndvVote{[]string{"A"}, 1},
+		},
+		Winners: []string{"A"},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 13",
+		Options:  []string{"A", "B", "C", "D", "E", "F"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"B"}, 1},
+			IndvVote{[]string{"B", "D", "E", "F", "A"}, 1},
+			IndvVote{[]string{"B"}, 1},
+			IndvVote{[]string{"C"}, 1},
+			IndvVote{[]string{"C"}, 1},
+			IndvVote{[]string{"D", "C"}, 1},
+		},
+		Winners: []string{},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 14",
+		Options:  []string{"A", "B", "C", "D", "E", "F"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"B"}, 1},
+			IndvVote{[]string{"B", "D", "E", "F", "A"}, 1},
+			IndvVote{[]string{"B"}, 1},
+			IndvVote{[]string{"C"}, 1},
+			IndvVote{[]string{"C"}, 1},
+			IndvVote{[]string{"D", "F"}, 1},
+		},
+		Winners: []string{},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 15",
+		Options:  []string{"A", "B", "C", "D", "E", "F"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"A", "E", "D"}, 1},
+			IndvVote{[]string{"A", "E", "C"}, 1},
+			IndvVote{[]string{"A", "E", "B"}, 1},
+			IndvVote{[]string{"A", "E", "B"}, 1},
+			IndvVote{[]string{"A", "E", "C"}, 1},
+			IndvVote{[]string{"A", "D", "E"}, 1},
+			IndvVote{[]string{"C", "B", "F"}, 1},
+			IndvVote{[]string{"C", "B", "F"}, 1},
+			IndvVote{[]string{"C", "D", "B"}, 1},
+			IndvVote{[]string{"E", "F", "D"}, 1},
+			IndvVote{[]string{"F", "B", "C"}, 1},
+			IndvVote{[]string{"F", "C", "B"}, 1},
+		},
+		Winners: []string{"A"},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 16",
+		Options:  []string{"A", "B", "C", "D", "E", "F"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"A", "E", "C"}, 1},
+			IndvVote{[]string{"A", "E", "B"}, 1},
+			IndvVote{[]string{"A", "E", "B"}, 1},
+			IndvVote{[]string{"A", "E", "C"}, 1},
+			IndvVote{[]string{"A", "D", "E"}, 1},
+			IndvVote{[]string{"C", "B", "F"}, 1},
+			IndvVote{[]string{"C", "B", "D"}, 1},
+			IndvVote{[]string{"C", "D", "B"}, 1},
+			IndvVote{[]string{"E", "C", "F"}, 1},
+			IndvVote{[]string{"F", "B", "C"}, 1},
+			IndvVote{[]string{"F", "B", "C"}, 1},
+		},
+		Winners: []string{"C"},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Ben Set 17",
+		Options:  []string{"A", "B", "C", "D", "E", "F"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"A", "D", "E"}, 1},
+			IndvVote{[]string{"A", "D", "E"}, 1},
+			IndvVote{[]string{"A", "D", "E"}, 1},
+			IndvVote{[]string{"A", "D", "E"}, 1},
+			IndvVote{[]string{"A", "D", "E"}, 1},
+			IndvVote{[]string{"A", "D", "E"}, 1},
+			IndvVote{[]string{"C", "D", "E"}, 1},
+			IndvVote{[]string{"C", "D", "E"}, 1},
+			IndvVote{[]string{"C", "D", "E"}, 1},
+			IndvVote{[]string{"E", "D", "F"}, 1},
+			IndvVote{[]string{"F", "D", "E"}, 1},
+			IndvVote{[]string{"F", "D", "E"}, 1},
+		},
+		Winners: []string{"A"},
 	},
 }
