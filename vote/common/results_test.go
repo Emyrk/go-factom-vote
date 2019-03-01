@@ -1003,4 +1003,27 @@ var VoteVectors = []VoteVector{
 		},
 		Winners: []string{"A"},
 	},
+
+	// Non-Specific
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Extra Set(0) 1",
+		Options:  []string{"A", "B", "C", "D", "E", "F"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{"F", "D", "E"}, 1},
+			IndvVote{[]string{"A", "D", "E"}, 1},
+			IndvVote{[]string{"A", "D", "E"}, 1},
+			IndvVote{[]string{"C", "D", "A"}, 1},
+			IndvVote{[]string{"C", "D", "A"}, 1},
+			IndvVote{[]string{"E", "D", "A"}, 1},
+			IndvVote{[]string{"F", "D", "E"}, 1},
+			IndvVote{[]string{"F", "D", "E"}, 1},
+		},
+		Winners: []string{"A"},
+	},
 }
