@@ -27,4 +27,4 @@ WORKDIR $GOPATH/src/github.com/Emyrk/go-factom-vote/scraper/scraperd
 # Build and install factomd
 RUN go install
 
-ENTRYPOINT ["/go/bin/scraperd", "-fhost=$FACTOMD_LOC", "-phost=$PG_HOST"]
+ENTRYPOINT /go/bin/scraperd -fhost=$FACTOMD_LOC -phost=$PG_HOST
