@@ -173,8 +173,10 @@ func TestVoteVector(t *testing.T) {
 		if err != nil {
 			t.Error(fmt.Errorf("Vect %d (%s) -> %s", i, v.Title, err.Error()))
 		}
-
 	}
+
+	data, _ := json.Marshal(VoteVectors)
+	fmt.Println(string(data))
 }
 
 func TestSpecificVoteVector(t *testing.T) {
@@ -251,22 +253,22 @@ type IndvVote struct {
 }
 
 type VoteVector struct {
-	Title    string
-	VoteType int
-	Options  []string
-	Votes    []IndvVote
-	Weights  []float64
-	Winners  []string
+	Title    string     `json:"title,omitempty"`
+	VoteType int        `json:"vote_type,omitempty"`
+	Options  []string   `json:"options,omitempty"`
+	Votes    []IndvVote `json:"votes,omitempty"`
+	Weights  []float64  `json:"weights,omitempty"`
+	Winners  []string   `json:"winners,omitempty"`
 
-	ExtraConfigs *ExtraConfigs
-	ExtraChecks  *ExtraChecks
+	ExtraConfigs *ExtraConfigs `json:"extra_config,omitempty"`
+	ExtraChecks  *ExtraChecks  `json:"extra_checks,omitempty"`
 }
 
 type ExtraConfigs struct {
-	MinVotes              int
-	MaxVotes              int
-	ComputeResultsAgainst string
-	opts                  map[string]interface{}
+	MinVotes              int                    `json:"min_votes,omitempty"`
+	MaxVotes              int                    `json:"max_votes,omitempty"`
+	ComputeResultsAgainst string                 `json:"compute_results_against,omitempty"`
+	opts                  map[string]interface{} `json:"opts,omitempty"`
 }
 
 func NewExtraConfigs(opts map[string]interface{}) *ExtraConfigs {
