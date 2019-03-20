@@ -50,6 +50,7 @@ func FilterInvalidVotes(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*
 	}
 
 	var validVotes []*VoteReveal
+ValidVoteLoop:
 	for _, r := range reveals {
 		// Voter exists
 		if _, ok := voterMap[r.VoterID.Fixed()]; ok {
@@ -58,7 +59,7 @@ func FilterInvalidVotes(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*
 				for _, v := range r.Content.VoteOptions {
 					// All vote options exist
 					if _, ok := validOptions[v]; !ok && v != "" {
-						continue
+						continue ValidVoteLoop
 					}
 				}
 				// Valid
@@ -70,9 +71,6 @@ func FilterInvalidVotes(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*
 				delete(voterMap, r.VoterID.Fixed())
 			}
 		}
-	}
-	if vote.Proposal.ProposalChain.String() == "677a0f58308d5b9e7c31b05843e976399c233e0625a11a940605b250945e459c" {
-		fmt.Println("FOUND")
 	}
 	return validVotes
 }
@@ -115,6 +113,11 @@ func ComputeIRVVote(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*Vote
 		if voter, ok := voterMap[r.VoterID.Fixed()]; ok {
 			stats.VotedStats.Count += 1
 			stats.VotedStats.Weight += float64(voter.VoteWeight)
+
+			if len(r.Content.VoteOptions) == 0 {
+				stats.AbstainedStats.Count += 1
+				stats.AbstainedStats.Weight += float64(voter.VoteWeight)
+			}
 		}
 	}
 
@@ -149,8 +152,11 @@ func ComputeIRVVote(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*Vote
 			break
 		}
 
+		// Add Abstain
+		round[""] = IRVRoundResult{Option: "", Count: stats.AbstainedStats.Count, Weight: stats.AbstainedStats.Weight}
 		winner = majority(round)
 		if winner == nil {
+			delete(round, "")
 			losers := minority(round)
 			for _, l := range losers {
 				delete(availableOptions, l.Option)
@@ -175,7 +181,7 @@ func ComputeIRVVote(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*Vote
 
 	// The winner stat comes from the IRV round, not the computer winners
 	// TODO: Does computer winners need to be called for min support?
-	if winner != nil {
+	if winner != nil && winner.Option != "" {
 		stat, ok := stats.OptionStats[winner.Option]
 		if ok {
 			stats.WeightedWinners = []VoteOptionStats{stat}

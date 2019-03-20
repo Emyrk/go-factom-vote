@@ -113,7 +113,7 @@ func ExpectedChecks(stats *VoteStats, vector VoteVector) error {
 				if k == "" {
 					v2 := stats.AbstainedStats
 					if !v.OptionStats.IsSameAs(v2) {
-						return fmt.Errorf("Option %s is not as expected.\n%v\n%v", k, v, v2)
+						return fmt.Errorf("Option 'Abstain' is not as expected.\n%v\n%v", v, v2)
 					}
 				} else {
 					return fmt.Errorf("Key %s is missing in vote", k)
@@ -179,9 +179,23 @@ func TestVoteVector(t *testing.T) {
 	fmt.Println(string(data))
 }
 
+func findVector(title string) (int, *VoteVector) {
+	for i, v := range VoteVectors {
+		if v.Title == title {
+			return i, &v
+		}
+	}
+	return -1, nil
+}
+
 func TestSpecificVoteVector(t *testing.T) {
-	i := 15
-	v := VoteVectors[i]
+	title := "Abstain Test 1"
+	i, vp := findVector(title)
+	if vp == nil {
+		t.Errorf("Test vector '%s' not found", title)
+		t.FailNow()
+	}
+	v := *vp
 
 	vote := MakeTestVote(v.Options, 1, 10)
 	vote.SetOptions(v)
@@ -880,7 +894,7 @@ var VoteVectors = []VoteVector{
 			IndvVote{[]string{}, 1},
 			IndvVote{[]string{"A"}, 1},
 		},
-		Winners: []string{"A"},
+		Winners: []string{},
 	},
 
 	VoteVector{
@@ -1002,6 +1016,79 @@ var VoteVectors = []VoteVector{
 			IndvVote{[]string{"E", "D", "F"}, 1},
 			IndvVote{[]string{"F", "D", "E"}, 1},
 			IndvVote{[]string{"F", "D", "E"}, 1},
+		},
+		Winners: []string{"A"},
+	},
+
+	// Abstain
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Abstain Test 0",
+		Options:  []string{"A", "B", "C", "D", "E", "F"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{}, 1},
+			IndvVote{[]string{}, 1},
+			IndvVote{[]string{}, 1},
+			IndvVote{[]string{"A"}, 1},
+		},
+		ExtraChecks: &ExtraChecks{
+			OptionStats: map[string]VoteOptionStats{
+				"": VoteOptionStats{
+					OptionStats: OptionStats{Option: "", Count: 3, Weight: 3}},
+			},
+		},
+		Winners: []string{},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Abstain Test 1",
+		Options:  []string{"A", "B", "C", "D", "E", "F"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{}, 1},
+			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"B", "A"}, 1},
+			IndvVote{[]string{"A"}, 1},
+		},
+		ExtraChecks: &ExtraChecks{
+			OptionStats: map[string]VoteOptionStats{
+				"": VoteOptionStats{
+					OptionStats: OptionStats{Option: "", Count: 1, Weight: 1}},
+			},
+		},
+		Winners: []string{"A"},
+	},
+
+	VoteVector{
+		VoteType: VOTE_IRV,
+		Title:    "Abstain Test 1",
+		Options:  []string{"A", "B", "C", "D", "E", "F"},
+		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
+			"min": 1, "max": 10,
+			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"abs": true,
+		}),
+		Votes: []IndvVote{
+			IndvVote{[]string{}, 1},
+			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"B", "A"}, 1},
+			IndvVote{[]string{"A"}, 1},
+		},
+		ExtraChecks: &ExtraChecks{
+			OptionStats: map[string]VoteOptionStats{
+				"": VoteOptionStats{
+					OptionStats: OptionStats{Option: "", Count: 1, Weight: 1}},
+			},
 		},
 		Winners: []string{"A"},
 	},
