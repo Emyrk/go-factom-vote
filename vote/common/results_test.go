@@ -1065,13 +1065,13 @@ var VoteVectors = []VoteVector{
 		Winners: []string{},
 	},
 
-	// A wins as winner criteria is 0%
+	// Testing the counts. A wins as winner criteria set to 0%
 	VoteVector{
 		VoteType: VOTE_IRV,
 		Title:    "Abstain Test 0",
 		Options:  []string{"A", "B", "C", "D", "E", "F"},
 		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
-			"min": 1, "max": 10,
+			"min": 3, "max": 3,
 			"cpa": "ALL_ELIGIBLE_VOTERS",
 			"abs": true,
 			"sup": AcceptCriteriaStruct{MinTurnout: CriteriaWeights{Unweighted: 0.5}},
@@ -1080,12 +1080,14 @@ var VoteVectors = []VoteVector{
 			IndvVote{[]string{}, 1},
 			IndvVote{[]string{}, 1},
 			IndvVote{[]string{}, 1},
-			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"A", "B", "C"}, 1},
 		},
 		ExtraChecks: &ExtraChecks{
 			OptionStats: map[string]VoteOptionStats{
 				"": VoteOptionStats{
 					OptionStats: OptionStats{Option: "", Count: 3, Weight: 3}},
+				"A": VoteOptionStats{
+					OptionStats: OptionStats{Option: "A", Count: 1, Weight: 1}, Support: 1.0 / 4.0, WeightedSupport: 1.0 / 4.0},
 			},
 			Additional: map[string]interface{}{
 				"valid": true,
@@ -1114,6 +1116,8 @@ var VoteVectors = []VoteVector{
 			OptionStats: map[string]VoteOptionStats{
 				"": VoteOptionStats{
 					OptionStats: OptionStats{Option: "", Count: 1, Weight: 1}},
+				"A": VoteOptionStats{
+					OptionStats: OptionStats{Option: "A", Count: 2, Weight: 2}, Support: 2.0 / 4.0, WeightedSupport: 2.0 / 4.0},
 			},
 			Additional: map[string]interface{}{
 				"valid": true,
@@ -1125,7 +1129,7 @@ var VoteVectors = []VoteVector{
 	// Winner Criteria is 0%, so the highest win, but invalid because not 50% turnout
 	VoteVector{
 		VoteType: VOTE_IRV,
-		Title:    "Abstain Test 3",
+		Title:    "Invalid Test 0",
 		Options:  []string{"A", "B", "C", "D", "E", "F"},
 		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
 			"min": 1, "max": 10,
@@ -1146,6 +1150,8 @@ var VoteVectors = []VoteVector{
 			OptionStats: map[string]VoteOptionStats{
 				"": VoteOptionStats{
 					OptionStats: OptionStats{Option: "", Count: 0, Weight: 0}},
+				"A": VoteOptionStats{
+					OptionStats: OptionStats{Option: "A", Count: 1, Weight: 1}, Support: 1.0 / 4.0, WeightedSupport: 1.0 / 4.0},
 			},
 			Additional: map[string]interface{}{
 				"valid": false,
@@ -1154,16 +1160,19 @@ var VoteVectors = []VoteVector{
 		Winners: []string{"A"},
 	},
 
-	// Checking invalid outcome because not enough support. A is winner, but vote invalid
+	// PARTICIPANTS_ONLY so A wins
 	VoteVector{
 		VoteType: VOTE_IRV,
 		Title:    "Invalid Test 1",
 		Options:  []string{"A", "B", "C", "D", "E", "F"},
 		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
 			"min": 1, "max": 10,
-			"cpa": "ALL_ELIGIBLE_VOTERS",
+			"cpa": "PARTICIPANTS_ONLY",
 			"abs": true,
-			"sup": AcceptCriteriaStruct{MinTurnout: CriteriaWeights{Unweighted: 0.5}},
+			"sup": AcceptCriteriaStruct{MinTurnout: CriteriaWeights{Unweighted: 0.0}},
+			"win": WinnerCriteriaStruct{
+				MinSupport: map[string]CriteriaWeights{"*": CriteriaWeights{.5, 0}},
+			},
 		}),
 		Votes: []IndvVote{
 			IndvVote{[]string{"Invalid"}, 1},
@@ -1175,9 +1184,11 @@ var VoteVectors = []VoteVector{
 			OptionStats: map[string]VoteOptionStats{
 				"": VoteOptionStats{
 					OptionStats: OptionStats{Option: "", Count: 0, Weight: 0}},
+				"A": VoteOptionStats{
+					OptionStats: OptionStats{Option: "A", Count: 1, Weight: 1}, Support: 1.0 / 1.0, WeightedSupport: 1.0 / 1.0},
 			},
 			Additional: map[string]interface{}{
-				"valid": false,
+				"valid": true,
 			},
 		},
 		Winners: []string{"A"},
