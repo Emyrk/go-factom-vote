@@ -200,7 +200,7 @@ func findVector(title string) (int, *VoteVector) {
 }
 
 func TestSpecificVoteVector(t *testing.T) {
-	title := "Abstain Test 1"
+	title := "Abstain Test 0"
 	i, vp := findVector(title)
 	if vp == nil {
 		t.Errorf("Test vector '%s' not found", title)
