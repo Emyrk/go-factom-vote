@@ -1039,10 +1039,11 @@ var VoteVectors = []VoteVector{
 		Title:    "Abstain Test 0",
 		Options:  []string{"A", "B", "C", "D", "E", "F"},
 		ExtraConfigs: NewExtraConfigs(map[string]interface{}{
-			"min": 1, "max": 10,
+			"min": 6, "max": 6,
 			"cpa": "ALL_ELIGIBLE_VOTERS",
 			"abs": true,
 			"sup": AcceptCriteriaStruct{MinTurnout: CriteriaWeights{Unweighted: 0.5}},
+			// DOES NOT AFFECT IRV
 			"win": WinnerCriteriaStruct{
 				MinSupport: map[string]CriteriaWeights{"*": CriteriaWeights{.5, 0}},
 			},
@@ -1051,7 +1052,7 @@ var VoteVectors = []VoteVector{
 			IndvVote{[]string{}, 1},
 			IndvVote{[]string{}, 1},
 			IndvVote{[]string{}, 1},
-			IndvVote{[]string{"A"}, 1},
+			IndvVote{[]string{"A", "B", "C", "D", "E", "F"}, 1},
 		},
 		ExtraChecks: &ExtraChecks{
 			OptionStats: map[string]VoteOptionStats{
@@ -1062,7 +1063,8 @@ var VoteVectors = []VoteVector{
 				"valid": true,
 			},
 		},
-		Winners: []string{},
+		// Winner criteria does not affect IRV. Turnout hit
+		Winners: []string{"A"},
 	},
 
 	// Testing the counts. A wins as winner criteria set to 0%
@@ -1204,6 +1206,7 @@ var VoteVectors = []VoteVector{
 			"cpa": "ALL_ELIGIBLE_VOTERS",
 			"abs": true,
 			"sup": AcceptCriteriaStruct{MinTurnout: CriteriaWeights{Unweighted: 0.5}},
+			// Ignored in IRV
 			"win": WinnerCriteriaStruct{
 				MinSupport: map[string]CriteriaWeights{"*": CriteriaWeights{.5, 0}},
 			},
@@ -1223,7 +1226,7 @@ var VoteVectors = []VoteVector{
 				"valid": false,
 			},
 		},
-		Winners: []string{},
+		Winners: []string{"A"},
 	},
 
 	// Non-Specific

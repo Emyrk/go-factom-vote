@@ -178,11 +178,11 @@ func ComputeIRVVote(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*Vote
 	// The winner stat comes from the IRV round, not the computer winners
 	// TODO: Does computer winners need to be called for min support?
 	if winner != nil {
-		stats.ComputeWinners(vote)
-		//stat, ok := stats.OptionStats[winner.Option]
-		//if ok {
-		//	stats.WeightedWinners = []VoteOptionStats{stat}
-		//}
+		//stats.ComputeWinners(vote)
+		stat, ok := stats.OptionStats[winner.Option]
+		if ok {
+			stats.WeightedWinners = []VoteOptionStats{stat}
+		}
 	}
 
 	return stats, nil
