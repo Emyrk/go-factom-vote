@@ -32,9 +32,6 @@ func ComputeResult(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*VoteR
 }
 
 func FilterInvalidVotes(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*VoteReveal) []*VoteReveal {
-	if vote.Proposal.ProposalChain.String() == "677a0f58308d5b9e7c31b05843e976399c233e0625a11a940605b250945e459c" {
-		fmt.Println("FOUND")
-	}
 	minOptions := vote.Proposal.Vote.Config.MinOptions
 	maxOptions := vote.Proposal.Vote.Config.MaxOptions
 
@@ -83,6 +80,7 @@ type IRVRoundResult struct {
 
 func ComputeIRVVote(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*VoteReveal) (*VoteStats, error) {
 	flog := plog.WithFields(log.Fields{"vote": vote.Proposal.ProposalChain.String(), "func": "ComputeIRVVote"})
+	var _ = flog
 
 	var availableOptions = make(map[string]bool)
 	stats := NewVoteStats()
@@ -148,15 +146,13 @@ func ComputeIRVVote(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*Vote
 		roundResults = append(roundResults, round)
 		if len(round) == 0 {
 			// No votes
-			flog.Infof("IRV has no winner")
+			//flog.Infof("IRV has no winner")
 			break
 		}
 
 		// Add Abstain
-		round[""] = IRVRoundResult{Option: "", Count: stats.AbstainedStats.Count, Weight: stats.AbstainedStats.Weight}
 		winner = majority(round)
 		if winner == nil {
-			delete(round, "")
 			losers := minority(round)
 			for _, l := range losers {
 				delete(availableOptions, l.Option)
@@ -181,11 +177,12 @@ func ComputeIRVVote(vote *Vote, eligibleVoters []*EligibleVoter, reveals []*Vote
 
 	// The winner stat comes from the IRV round, not the computer winners
 	// TODO: Does computer winners need to be called for min support?
-	if winner != nil && winner.Option != "" {
-		stat, ok := stats.OptionStats[winner.Option]
-		if ok {
-			stats.WeightedWinners = []VoteOptionStats{stat}
-		}
+	if winner != nil {
+		stats.ComputeWinners(vote)
+		//stat, ok := stats.OptionStats[winner.Option]
+		//if ok {
+		//	stats.WeightedWinners = []VoteOptionStats{stat}
+		//}
 	}
 
 	return stats, nil
