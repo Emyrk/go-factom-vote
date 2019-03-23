@@ -313,6 +313,8 @@ func (g *GraphQLSQLDB) FetchAllVotes(registered int, active bool, limit, offset 
 		query = query.Where("(SELECT max(block_height) FROM completed) < reveal_stop")
 	case "complete":
 		query = query.Where("reveal_stop <= (SELECT max(block_height) FROM completed)")
+	default:
+		return nil, fmt.Errorf("'%s' is not a valid status, choose from 'discussion, commit, reveal, complete'", status)
 	}
 
 	if title != "" {
