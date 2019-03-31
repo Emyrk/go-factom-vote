@@ -31,3 +31,7 @@ const (
 	// Chain that lists eligible voters
 	EXT0_ELIGIBLE_VOTER_CHAIN = "factom-vote-eligible-voters"
 )
+
+const (
+	REGISTRATION_CHAIN = "a968e880ee3a7002f25ade15ae36a77c15f4dbc9d8c11fdd5fe86ba6af73a475"
+)

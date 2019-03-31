@@ -309,12 +309,16 @@ func (vw *VoteWatcher) ProcessVoteRegister(entry interfaces.IEBEntry,
 	newEntry bool) (bool, bool, error) {
 
 	if len(entry.ExternalIDs()) != 2 {
-		return false, false, fmt.Errorf("Incorrect number of extids")
+		return false, false, fmt.Errorf("incorrect number of extids")
+	}
+
+	if entry.GetChainID().String() != REGISTRATION_CHAIN {
+		return false, false, fmt.Errorf("must register in %s chain", REGISTRATION_CHAIN)
 	}
 
 	votechain := hex.EncodeToString(entry.ExternalIDs()[1])
 	if len(votechain) != 64 {
-		return false, false, fmt.Errorf("Incorrect number of bytes for chainid")
+		return false, false, fmt.Errorf("incorrect number of bytes for chainid")
 	}
 
 	exists, err := vw.SQLDB.IsVoteExist(votechain)
