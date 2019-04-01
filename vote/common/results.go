@@ -378,7 +378,10 @@ func (s *VoteStats) ComputeSupport(vote *Vote) error {
 			s.Support.WeightDenominator = s.VotedStats.Weight + s.AbstainedStats.Weight
 		}
 	default:
-		return fmt.Errorf("'%s' not a supported 'computeResultsAgainst' value", vote.Proposal.Vote.Config.ComputeResultsAgainst)
+		// IRV does not use this, so don't report it's invalid
+		if vote.Proposal.Vote.VoteType != VOTE_IRV {
+			return fmt.Errorf("'%s' not a supported 'computeResultsAgainst' value", vote.Proposal.Vote.Config.ComputeResultsAgainst)
+		}
 	}
 
 	if s.Support.WeightDenominator != 0 && s.Support.CountDenominator != 0 {
